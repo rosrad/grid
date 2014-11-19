@@ -1,0 +1,6 @@
+PWD /home/14/ren/source/golang/go/src/github.com/rosrad/lecture/sys-ctrl
+INPUT /home/14/ren/local/texlive/2014/texmf.cnf
+INPUT /home/14/ren/local/texlive/2014/texmf-dist/web2c/texmf.cnf
+INPUT /home/14/ren/local/texlive/2014/texmf-var/web2c/pdftex/pdflatex.fmt
+INPUT open.tex
+OUTPUT build/open.log

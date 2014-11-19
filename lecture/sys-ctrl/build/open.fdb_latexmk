@@ -1,0 +1,10 @@
+# Fdb version 3
+["pdflatex"] 1415177581 "open.tex" "build/open.pdf" "open" 1415177581
+  "/home/14/ren/local/texlive/2014/texmf-dist/web2c/texmf.cnf" 1398200874 31722 4f52421e59a4b9e910cf18e64c1f2b4a ""
+  "/home/14/ren/local/texlive/2014/texmf-var/web2c/pdftex/pdflatex.fmt" 1406293181 3835558 c76f91466b05c64d0d34914d934e61f7 ""
+  "/home/14/ren/local/texlive/2014/texmf.cnf" 1406293645 455 5b996dcaa0eb4ef14a83b026bc0a008c ""
+  "build/open.aux" 1415177581 8 a94a2480d3289e625eea47cd1b285758 ""
+  "open.tex" 1415177552 4352 0da4d9202dbb132ac7b397e5ee24e3a0 ""
+  (generated)
+  "build/open.log"
+  "build/open.pdf"

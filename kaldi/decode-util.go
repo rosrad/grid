@@ -71,7 +71,6 @@ func AutoScore(identify string, dirs []string) ([][]string, error) {
 	res_str := [][]string{}
 	for _, dir := range dirs {
 		cmd_str := "grep WER " + dir + "/wer* | utils/best_wer.sh |awk '{print $2}'"
-		Trace().Println("Score Dir:", dir)
 		output, err := BashOutput(cmd_str)
 		if err != nil {
 			return [][]string{}, err

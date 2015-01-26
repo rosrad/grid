@@ -16,32 +16,40 @@ type ExpBase struct {
 	Exp   string
 	Feat  string
 	Label string
+	Root  string
 }
 
 func NewExpBase() *ExpBase {
-	return &ExpBase{Name: "tri1", Exp: "GMM", Feat: "mfcc", Label: "normal"}
+	return &ExpBase{Name: "tri1", Exp: "GMM", Feat: "mfcc", Label: "normal", Root: ""}
+}
+
+func (p ExpBase) RootPath() string {
+	if p.Root == "" {
+		return RootPath()
+	}
+	return p.Root
 }
 
 func (p ExpBase) ExpDir() string {
-	return path.Join(RootPath(), "exp", p.Feat, p.Label, p.Exp, p.Name)
+	return path.Join(p.RootPath(), "exp", p.Feat, p.Label, p.Exp, p.Name)
 }
 func (p ExpBase) DataDir() string {
-	return path.Join(RootPath(), "feats", p.Feat, p.Label, "data")
+	return path.Join(p.RootPath(), "feats", p.Feat, p.Label, "data")
 }
 
 func (p ExpBase) ParamDir() string {
-	return path.Join(RootPath(), "feats", p.Feat, p.Label, "data")
+	return path.Join(p.RootPath(), "feats", p.Feat, p.Label, "param")
 }
 func (p ExpBase) LogDir() string {
-	return path.Join(RootPath(), "log", p.Feat, p.Label, p.Exp)
+	return path.Join(p.RootPath(), "log", p.Feat, p.Label, p.Exp)
 }
 
 func (p ExpBase) DeriveExp() string {
-	return path.Join(RootPath(), "feats", p.Feat, "exp", p.Name)
+	return path.Join(p.RootPath(), "feats", p.Feat, "exp", p.Label)
 }
 
 func (p ExpBase) DeriveDump() string {
-	return path.Join(RootPath(), "feats", p.Feat, "exp", p.Name, "dump")
+	return path.Join(p.RootPath(), "feats", p.Feat, "exp", p.Label, "dump")
 }
 
 func (p ExpBase) AlignDir() string {
@@ -52,11 +60,7 @@ func (p ExpBase) AlignDir() string {
 }
 
 func (p ExpBase) TrainData(cond string) string {
-	train := "si_tr"
-	if cond == "mc" {
-		train = "REVERB_tr_cut/SimData_tr_for_1ch_A"
-	}
-	return path.Join(p.DataDir(), train)
+	return path.Join(p.DataDir(), TrainName(cond))
 }
 
 func (p ExpBase) StoreName() map[string]string {

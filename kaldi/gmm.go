@@ -4,44 +4,18 @@ import (
 	"encoding/json"
 	"io"
 	"path"
-	"strconv"
+	"sync"
 )
-
-type GmmConf struct {
-	Jobs int
-	Tri1 bool
-}
-
-func NewGmmConf() *GmmConf {
-	return &GmmConf{Jobs: 10, Tri1: false}
-}
-
-func (conf GmmConf) OptStr() string {
-	var_opt := ""
-	if conf.Tri1 {
-		var_opt = JoinArgs(var_opt, "--boost-silence", "1.25")
-	}
-	return var_opt
-}
 
 type Gmm struct {
 	Model
-	ModelConf
-	GmmConf
 }
 
-func NewGmm(feat string) *Gmm {
-	g := &Gmm{*NewModel(), *NewModelConf(), *NewGmmConf()}
+func NewGmm() *Gmm {
+	g := &Gmm{*NewModel()}
 	// src model values
-	g.Src.Feat = feat
 	g.Src.Exp = g.Identify()
-	g.Src.Label = "normal"
-	g.Src.Name = "tri1"
-	// copy from src
 	g.Dst = g.Src
-	g.Dst.Name = "tri2"
-	// mk align config from src
-	// g.Src = *g.Src.MkAlign()
 	return g
 }
 
@@ -58,28 +32,46 @@ func (g Gmm) Subsets(set string) ([]string, error) {
 }
 
 func (g Gmm) DecodeDir(set string) string {
-	return path.Join(g.TargetDir(), JoinParams("decode", "#"+path.Base(set)))
+	return MkDecode(g.TargetDir(), set)
 }
 
 func (g Gmm) OptStr() string {
-	return JoinArgs(g.ModelConf.OptStr(), g.GmmConf.OptStr())
+	var_opt := ""
+	if !g.MC {
+		var_opt = JoinArgs(var_opt, "--boost-silence", "1.25")
+	}
+
+	return JoinArgs(var_opt, g.Feat.OptStr())
+}
+
+func (g Gmm) TrainData() string {
+	cond := "mc"
+	if !g.MC {
+		cond = "cln"
+	}
+	return g.Dst.TrainData(cond)
+}
+
+func (g Gmm) Gaussian() string {
+	gaussian := "2000 10000"
+	if g.MC {
+		gaussian = "2500 15000"
+	}
+	return gaussian
 }
 
 func (g Gmm) Train() error {
-	gauss_conf := "2500 15000"
-	if g.GmmConf.Tri1 {
-		gauss_conf = "2000 10000"
-	}
 	cmd_str := JoinArgs(
 		"steps/train_deltas.sh",
 		g.OptStr(),
-		gauss_conf,
-		g.Dst.TrainData("mc"),
+		g.Gaussian(),
+		g.Dst.TrainData(g.Condition()),
 		Lang(),
 		g.AlignDir(),
 		g.TargetDir(),
 	)
-	err := BashRun(cmd_str)
+
+	err := LogCpuRun(cmd_str, g.TargetDir())
 	if err != nil {
 		return err
 	}
@@ -92,17 +84,24 @@ func (g Gmm) Decode(set string) error {
 	if err != nil {
 		return err
 	}
+	var wg sync.WaitGroup
 	for _, dir := range dirs {
+		wg.Add(1)
 		cmd_str := JoinArgs(
 			"steps/decode.sh",
-			"--nj "+strconv.Itoa(JobNum("decode")),
+			"--nj ", JobNum("decode"),
+			g.FeatOpt(),
 			Graph(g.TargetDir()),
 			path.Join(g.Dst.DataDir(), dir),
 			g.DecodeDir(dir))
-		if err := BashRun(cmd_str); err != nil {
-			return err
-		}
+		go func(cmd, dir string) {
+			defer wg.Done()
+			if err := LogCpuRun(cmd, dir); err != nil {
+				Err().Println(err)
+			}
+		}(cmd_str, g.DecodeDir(dir))
 	}
+	wg.Wait()
 	return nil
 }
 
@@ -116,12 +115,11 @@ func (g Gmm) Identify() string {
 
 type GmmTask struct {
 	Gmm
-	TaskBase *TaskBase
 	TaskConf *TaskConf
 }
 
-func NewGmmTask(feat string) *GmmTask {
-	return &GmmTask{*NewGmm(feat), NewTaskBase("gmm", ""), NewTaskConf()}
+func NewGmmTask() *GmmTask {
+	return &GmmTask{*NewGmm(), NewTaskConf()}
 }
 
 func (t GmmTask) Identify() string {
@@ -136,7 +134,7 @@ func GmmTasksFrom(reader io.Reader) []TaskRuner {
 	dec := json.NewDecoder(reader)
 	tasks := []TaskRuner{}
 	for {
-		t := NewGmmTask("mfcc")
+		t := NewGmmTask()
 		err := dec.Decode(t)
 		if err != nil {
 			Err().Println("GMM Decode Error:", err)

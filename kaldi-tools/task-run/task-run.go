@@ -8,6 +8,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"sync"
 )
 
 func TasksFrom(identifier string) []kaldi.TaskRuner {
@@ -18,9 +19,10 @@ func TasksFrom(identifier string) []kaldi.TaskRuner {
 		kaldi.Err().Println("Can not open task:", file)
 	}
 	defer fts.Close()
-	task_func := kaldi.TaskFromFunc(identifier)
+	taskId := strings.Split(identifier, "_")[0]
+	task_func := kaldi.TaskFromFunc(taskId)
 	if task_func == nil {
-		kaldi.Err().Println("No effective TaskFromFunc for ", identifier)
+		kaldi.Err().Println("No effective TaskFromFunc for ", taskId)
 		return []kaldi.TaskRuner{}
 	}
 	return task_func(fts)
@@ -39,14 +41,20 @@ func SingleTask(tag string, idx int) {
 		return
 	}
 	kaldi.Trace().Printf("%d Tasks in file [%s] will be run!\n", len(tasks), tag)
+	var wg sync.WaitGroup
 	for i, t := range tasks {
-		kaldi.Trace().Println("Task Idx:", i)
-		t.Run()
+		wg.Add(1)
+		go func(idx int, t kaldi.TaskRuner) {
+			defer wg.Done()
+			kaldi.Trace().Println("Task Idx:", idx)
+			t.Run()
+		}(i, t)
 	}
+	wg.Wait()
 }
 
 func RunMultiTask(list string) {
-	list_file := kaldi.TaskFile(list)
+	list_file := kaldi.TaskList(list)
 	fl, err := os.Open(list_file)
 	if err != nil {
 		kaldi.Err().Println("Can not open task list:", list_file)
@@ -55,12 +63,23 @@ func RunMultiTask(list string) {
 
 	sc := bufio.NewScanner(fl)
 	kaldi.Trace().Println("Task List File:", list_file)
+	var wg sync.WaitGroup
 	for sc.Scan() {
 		str := sc.Text()
 		kaldi.Trace().Println("Task String:", str)
-		items := strings.Split(str, "#")
-		RunTask(items[0], items[1])
+		if strings.HasPrefix(str, "//") || len(str) == 0 {
+			continue
+		}
+		wg.Add(1)
+		go func(str string) {
+			defer wg.Done()
+			for _, field := range strings.Split(str, ";") {
+				items := strings.Split(field, "#")
+				RunTask(strings.Trim(items[0], " \n"), strings.Trim(items[1], " \n"))
+			}
+		}(str)
 	}
+	wg.Wait()
 }
 func parseRange(str string) ([]int, error) {
 	kaldi.Trace().Println("Scope string", str)
@@ -85,9 +104,9 @@ func parseRange(str string) ([]int, error) {
 			return []int{}, fmt.Errorf("Syntax Err: range item pair disatteched ")
 		}
 		if len(boundary) == 1 {
-			boundary = append(boundary, boundary[0]+1)
+			boundary = append(boundary, boundary[0])
 		}
-		for i := boundary[0]; i < boundary[1]; i++ {
+		for i := boundary[0]; i <= boundary[1]; i++ {
 			res = append(res, i)
 		}
 	}
@@ -101,33 +120,40 @@ func RunTask(tag, scope string) error {
 		return fmt.Errorf("Parse range:", err)
 	}
 	kaldi.Trace().Println("Range:", idx_list)
+	var wg sync.WaitGroup
 	for _, value := range idx_list {
-		SingleTask(tag, value)
+		wg.Add(1)
+		go func(tag string, idx int) {
+			defer wg.Done()
+			SingleTask(tag, idx)
+		}(tag, value)
 	}
+	wg.Wait()
 	return nil
 }
 
 func main() {
-	var list, scope string
+	var list, scope, root, lm string
+	flag.StringVar(&root, "root", "", "root path")
+	flag.StringVar(&lm, "lm", "", "language model")
 	flag.StringVar(&list, "list", "", "task list")
 	flag.StringVar(&scope, "scope", "-1", "scope: number ,1-3,4,5 ")
-	flag.PrintDefaults()
 	flag.Parse()
+	kaldi.Init(root, lm)
+	defer kaldi.Uninit()
+	kaldi.Trace().Println("task-run")
+	kaldi.DevInstance().AutoSync()
+	if list != "" {
+		RunMultiTask(list)
+		return
+	}
+
 	if flag.NArg() < 1 {
 		fmt.Println("No enough args!")
 		return
 	}
 	tag := flag.Arg(0)
-	kaldi.Init()
-	defer kaldi.Uninit()
 	kaldi.Trace().Println("tag", tag)
-	kaldi.Trace().Println("task-run")
-	kaldi.Trace().Println("Tasks: DNN, GMM, MK-BNF")
-
-	if list == "" {
-		RunTask(tag, scope)
-	} else {
-		RunMultiTask(list)
-	}
-
+	kaldi.Trace().Println("Tasks: DNN, GMM, MK-BNF,MK-FMLLR")
+	RunTask(tag, scope)
 }

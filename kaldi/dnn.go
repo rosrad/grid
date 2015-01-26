@@ -6,23 +6,26 @@ import (
 	"io"
 	"path"
 	"strconv"
+	"sync"
 )
 
 // training config struct
 type DnnConf struct {
 	MinBatch int
 	Jobs     int
-	Layers   int
+	Nodes    int
 	Context  int
+	Layers   int
 	Gpu      bool
 }
 
 func NewDnnConf() *DnnConf {
 	return &DnnConf{
-		MinBatch: 512,
-		Jobs:     JobNum("dnn"),
+		MinBatch: 256,
+		Jobs:     16,
+		Nodes:    500,
+		Context:  0,
 		Layers:   2,
-		Context:  1,
 		Gpu:      true}
 }
 
@@ -31,33 +34,24 @@ func (conf *DnnConf) OptStr() string {
 	if conf.Gpu {
 		var_opt = JoinArgs(var_opt, "--num-threads", "1")
 	}
-	if conf.Context != 1 {
-		var_opt = JoinArgs(var_opt, "--splice-width", strconv.Itoa(conf.Context))
-	}
 	var_opt = JoinArgs(var_opt, "--minibatch-size", strconv.Itoa(conf.MinBatch))
+	var_opt = JoinArgs(var_opt, "--splice-width", strconv.Itoa(conf.Context))
 	var_opt = JoinArgs(var_opt, "--num-hidden-layers", strconv.Itoa(conf.Layers))
 	var_opt = JoinArgs(var_opt, "--num-jobs-nnet", strconv.Itoa(conf.Jobs))
+	var_opt = JoinArgs(var_opt, "--hidden-layer-dim", strconv.Itoa(conf.Nodes))
 	return var_opt
 }
 
 type Dnn struct {
 	Model
-	ModelConf
 	DnnConf DnnConf
 }
 
-func NewDnn(feat string) *Dnn {
-	d := &Dnn{*NewModel(), *NewModelConf(), *NewDnnConf()}
+func NewDnn() *Dnn {
+	d := &Dnn{*NewModel(), *NewDnnConf()}
 	// src model values
-	d.Src.Feat = feat
-	d.Src.Exp = "GMM"
-	d.Src.Label = "normal"
-	d.Src.Name = "tri1"
-	// copy from src
 	d.Dst = d.Src
 	d.Dst.Exp = d.Identify()
-	// mk align config from src
-	// d.Src = *d.Src.MkAlign()
 	return d
 }
 
@@ -74,13 +68,13 @@ func (d Dnn) Subsets(set string) ([]string, error) {
 }
 
 func (d Dnn) DecodeDir(dir string) string {
-	return path.Join(d.TargetDir(), JoinParams("decode#", path.Base(dir)))
+	return MkDecode(d.TargetDir(), dir)
 }
 
 func (d Dnn) OptStr() string {
 	return JoinArgs(
 		d.DnnConf.OptStr(),
-		d.ModelConf.OptStr())
+		d.Feat.OptStr())
 }
 
 func (d Dnn) Train() error {
@@ -94,13 +88,12 @@ func (d Dnn) Train() error {
 		"--add-layers-period 1",
 		"--shrink-interval 3",
 		d.OptStr(),
-		d.Dst.TrainData("mc"),
+		d.Dst.TrainData(d.Condition()),
 		Lang(),
 		d.AlignDir(),
 		d.TargetDir())
 	Trace().Println(cmd_str)
-
-	err := BashRun(cmd_str)
+	err := LogGpuRun(cmd_str, d.TargetDir())
 	if err != nil {
 		return err
 	}
@@ -113,40 +106,27 @@ func (d Dnn) Decode(set string) error {
 	if err != nil {
 		return err
 	}
-
+	var wg sync.WaitGroup
 	for _, dir := range items {
 		cmd_str := JoinArgs(
 			"steps/nnet2/decode.sh",
 			"--num-threads 1",
-			"--nj "+strconv.Itoa(JobNum("decode")),
+			"--nj", JobNum("decode"),
+			d.FeatOpt(),
 			Graph(d.TargetDir()),
 			path.Join(d.Dst.DataDir(), dir),
 			d.DecodeDir(dir))
-
-		if err := BashRun(cmd_str); err != nil {
-			return err
-		}
+		wg.Add(1)
+		go func(cmd_str, dir string) {
+			defer wg.Done()
+			if err := LogCpuRun(cmd_str, dir); err != nil {
+				Err().Println(err)
+			}
+		}(cmd_str, d.DecodeDir(dir))
 	}
-
+	wg.Wait()
 	return nil
 }
-
-// func (d Dnn) DecodeDirs(set string) []string {
-// 	items, err := d.Subsets(set)
-// 	dirs := []string{}
-// 	if err != nil {
-// 		Err().Println("Generate Subset Error:", err)
-// 		return dirs
-// 	}
-// 	for _, item := range items {
-// 		dir := d.DecodeDir(item)
-// 		if !DirExist(dir) {
-// 			continue
-// 		}
-// 		dirs = append(dirs, dir)
-// 	}
-// 	return dirs
-// }
 
 // implement the Counter interface
 func (d Dnn) Score(set string) ([][]string, error) {
@@ -158,13 +138,12 @@ func (d Dnn) Identify() string {
 }
 
 type DnnTask struct {
-	Dnn      //Dnn struct that was used
-	TaskBase *TaskBase
+	Dnn                //Dnn struct that was used
 	TaskConf *TaskConf // task config for dnn
 }
 
-func NewDnnTask(feat string) *DnnTask {
-	return &DnnTask{*NewDnn(feat), NewTaskBase("dnn", ""), NewTaskConf()}
+func NewDnnTask() *DnnTask {
+	return &DnnTask{*NewDnn(), NewTaskConf()}
 }
 
 func (t DnnTask) Identify() string {
@@ -179,7 +158,7 @@ func DnnTasksFrom(reader io.Reader) []TaskRuner {
 	dec := json.NewDecoder(reader)
 	tasks := []TaskRuner{}
 	for {
-		t := NewDnnTask("mfcc")
+		t := NewDnnTask()
 		err := dec.Decode(t)
 		if err != nil {
 			break

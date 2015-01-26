@@ -52,8 +52,81 @@ func DirExist(dir string) bool {
 	return true
 }
 
+func LogGpuRun(cmd, dir string) error {
+	opt := DevInstance().AutoSelectGpu()
+	cwd, cerr := os.Getwd()
+	if cerr != nil {
+		return cerr
+	}
+	dev_cmd := JoinArgs("ssh", opt.Node,
+		"\"cd", cwd+";",
+		cmd+"\"")
+	Trace().Printf("HOST: %s\nCMD: %s\n", opt.Node, dev_cmd)
+	return LogRun(dev_cmd, dir)
+}
+
+func LogCpuRun(cmd, dir string) error {
+	opt := DevInstance().AutoSelectCpu()
+	cwd, cerr := os.Getwd()
+	if cerr != nil {
+		return cerr
+	}
+	dev_cmd := JoinArgs("ssh", opt.Node,
+		"\"cd", cwd+";",
+		cmd+"\"")
+	Trace().Printf("HOST: %s\nCMD: %s\n", opt.Node, dev_cmd)
+	return LogRun(dev_cmd, dir)
+}
+
+func LogRun(cmd, dir string) error {
+	InsureDir(dir)
+	file := path.Join(dir, "cmd")
+	f, err := os.Create(file)
+	if err != nil {
+		Err().Println(err)
+		return err
+	}
+	defer f.Close()
+	content := cmd + "\n"
+	if _, err := f.WriteString(content); err != nil {
+		Err().Println(err)
+		return err
+	}
+	tag := path.Base(dir)
+	s := sh.Command("bash", "-c", cmd)
+	s.Stderr = NewLogWriter(tag)
+	s.Stdout = NewLogWriter(tag)
+	return s.Run()
+}
+
+func CpuBashRun(cmd string) error {
+	opt := DevInstance().AutoSelectCpu()
+	cwd, cerr := os.Getwd()
+	if cerr != nil {
+		return cerr
+	}
+	dev_cmd := JoinArgs("ssh", opt.Node,
+		"\"cd", cwd+";",
+		cmd+"\"")
+	return BashRun(dev_cmd)
+}
+
 func BashRun(cmd string) error {
-	return sh.Command("bash", "-c", cmd).Run()
+	s := sh.Command("bash", "-c", cmd)
+	// s.Stdout = LogWriter()
+	return s.Run()
+}
+
+func CpuBashOutput(cmd string) (out []byte, err error) {
+	opt := DevInstance().AutoSelectCpu()
+	cwd, cerr := os.Getwd()
+	if cerr != nil {
+		return []byte{}, cerr
+	}
+	dev_cmd := JoinArgs("ssh", opt.Node,
+		"\"cd", cwd+";",
+		cmd+"\"")
+	return BashOutput(dev_cmd)
 }
 
 func BashOutput(cmd string) (out []byte, err error) {
@@ -90,7 +163,7 @@ func Exclude(sets, blacklist []string) []string {
 }
 
 func ExcludeDefault(set []string) []string {
-	blacklist := []string{"dt", "decode", "for", "reverb", "simdata"}
+	blacklist := []string{"dt", "decode", "for", "reverb", "simdata", "1ch", "a", "bg"}
 	return Exclude(set, blacklist)
 }
 

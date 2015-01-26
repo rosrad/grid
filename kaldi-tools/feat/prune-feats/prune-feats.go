@@ -62,7 +62,11 @@ func FindScp(dir string) []string {
 		"|grep -v wav.scp"}, " ") // exclude the wave.scp
 	fmt.Println(cmd_str)
 	outstr, _ := BashOutput(cmd_str)
-	files := strings.Split(strings.Trim(string(outstr), "\n"), "\n")
+	clean_output := strings.Trim(string(outstr), " \n")
+	if clean_output == "" {
+		return []string{}
+	}
+	files := strings.Split(clean_output, "\n")
 	return files
 }
 
@@ -106,14 +110,16 @@ func PruneParam(src, dst string) {
 		return
 	}
 	for _, dir := range subdirs {
-		files := FindScp(path.Join(src, dir.Name()))
+		cur_dir := path.Join(src, dir.Name())
+		files := FindScp(cur_dir)
 		if len(files) == 0 {
 			fmt.Println("Empty destination list!", dst)
-			return
+			continue
 		}
-		fmt.Printf("Files in [%s]:%d\n", src, len(files))
+		fmt.Printf("Files in [%s]:%d\n", cur_dir, len(files))
 		for _, f := range files {
 			file, _ := filepath.Abs(f)
+			fmt.Println("Processing File:", file)
 			ReplaceContent(file, dst)
 		}
 	}
@@ -126,6 +132,7 @@ func main() {
 	flag.StringVar(&src, "src", "./", "the source directory of feature ")
 	// flag.StringVar(&dst, "dst", "", "the destination directory of feature ")
 	flag.BoolVar(&bnocopy, "nocopy", false, "whether copy source to destination")
+	flag.PrintDefaults()
 	flag.Parse()
 	dst = flag.Arg(0)
 	fmt.Println("Src:", src)
@@ -138,6 +145,12 @@ func main() {
 			return
 		}
 
+		abs_src, _ := filepath.Abs(src)
+		abs_dst, _ := filepath.Abs(dst)
+		if abs_src == abs_dst {
+			fmt.Println("src and dst are the same!")
+			return
+		}
 		fmt.Println("Copy", src, "To", dst)
 		if err := CopyDirs(src, dst); err != nil {
 			fmt.Println("Copy Error:", err)

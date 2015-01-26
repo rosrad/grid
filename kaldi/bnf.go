@@ -5,37 +5,56 @@ import (
 	"io"
 	"path"
 	"strconv"
+	"sync"
 )
+
+type BnfConf struct {
+	BottleDim int
+}
+
+func NewBnfConf() *BnfConf {
+	return &BnfConf{BottleDim: 42}
+}
+
+func (bc BnfConf) OptStr() string {
+	var_opt := ""
+	var_opt = JoinArgs(var_opt, "--bottleneck-dim", strconv.Itoa(bc.BottleDim))
+	return var_opt
+}
 
 type BnfDnn struct {
 	Dnn // inherit from normal Dnn
+	BnfConf
 }
 
 func NewBnfDnn() *BnfDnn {
-	b := &BnfDnn{*NewDnn("mfcc")}
+	b := &BnfDnn{*NewDnn(), *NewBnfConf()}
 	b.Dst.Feat = "bnf"
 	return b
 }
+
+func (b BnfDnn) OptStr() string {
+	return JoinArgs(b.BnfConf.OptStr(),
+		b.DnnConf.OptStr(),
+		b.Feat.OptStr())
+}
+
 func (b *BnfDnn) Train() error {
 	cmd_str := JoinArgs(
 		"steps/nnet2/train_tanh_bottleneck.sh",
 		" --stage -100",
-		"--num-threads 1 ",
 		"--mix-up 5000",
 		"--max-change 40",
 		"--initial-learning-rate 0.005",
 		"--final-learning-rate 0.0005",
-		"--bottleneck-dim 42",
-		"--hidden-layer-dim 1024",
-		b.DnnConf.OptStr(),
-		b.ModelConf.OptStr(),
-		b.Src.TrainData("mc"), // here mfcc feature is used to train bnfdnn
+		b.OptStr(),
+		b.Src.TrainData(b.Condition()), // here mfcc feature is used to train bnfdnn
 		Lang(),
 		b.AlignDir(),
 		b.TargetDir())
 
 	Trace().Println(cmd_str)
-	err := BashRun(cmd_str)
+	err := LogGpuRun(cmd_str, b.TargetDir())
 	if err != nil {
 		return err
 	}
@@ -63,77 +82,71 @@ func (b *BnfDnn) Dump(set string) error {
 	if err != nil {
 		return err
 	}
-
+	var wg sync.WaitGroup
 	for _, dir := range dirs {
+		wg.Add(1)
+		dst_data := path.Join(b.Dst.DataDir(), dir)
 		cmd_str := JoinArgs(
 			"steps/nnet2/dump_bottleneck_features.sh",
-			"--nj "+strconv.Itoa(JobNum("decode")),
-			b.ModelConf.OptStr(),
+			"--nj", JobNum("decode"),
+			b.FeatOpt(),
 			path.Join(b.Src.DataDir(), dir), // source dir
-			path.Join(b.Dst.DataDir(), dir), // bnf destination dir
+			dst_data,                        // bnf destination dir
 			b.TargetDir(),                   // bnf model
 			path.Join(b.Dst.ParamDir(), dir),
 			b.Dst.DeriveDump())
-
-		Trace().Println(cmd_str)
-		err := BashRun(cmd_str)
-		if err != nil {
-			Err().Println("Dump#", err)
-		}
+		go func(cmd, dir string) {
+			defer wg.Done()
+			if err := LogCpuRun(cmd, dir); err != nil {
+				Err().Println("Dump#", err)
+			}
+		}(cmd_str, dst_data)
 	}
+	wg.Wait()
 	return nil
 }
 
 func (b *BnfDnn) DumpSets(sets []string) {
 	b.InsureStorage()
+	c := NewCmvn()
+	c.ExpBase = b.Dst
+	var wg sync.WaitGroup
 	for _, set := range sets {
-		b.Dump(set)
-		// compute the cmvn status for BNF
-		b.CmvnCompute(set)
+		wg.Add(1)
+		go func(set string) {
+			defer wg.Done()
+			b.Dump(set)
+			c.Compute(set)
+		}(set)
 	}
-}
-
-func (b *BnfDnn) CmvnCompute(set string) {
-	// compute  cmvn for BNF
-	cmvn_modes := []string{"utt", "spk"}
-	for _, mode := range cmvn_modes {
-		cmvn := NewCmvnOption("bnf", mode)
-		cmvn.ExpBase = b.Dst
-		subsets, _ := b.Dst.Subsets(set)
-		for _, subset := range subsets {
-			cmvn.CompCmvn(subset)
-		}
-	}
-}
-
-func (b *BnfDnn) CmvnSets(sets []string) {
-	// compute  cmvn for BNF
-	for _, set := range sets {
-		b.CmvnCompute(set)
-	}
+	wg.Wait()
 }
 
 type BnfTask struct {
 	BnfDnn
-	TaskBase *TaskBase
+	*TaskConf
 }
 
 func NewBnfTask() *BnfTask {
-	return &BnfTask{*NewBnfDnn(), NewTaskBase("MK-BNF", "")}
+	return &BnfTask{*NewBnfDnn(), NewTaskConf()}
 }
 
 func (t BnfTask) Identify() string {
-	return "MK-BNF"
+	return "BNF"
 }
 
 func (t BnfTask) Run() error {
-	if err := t.Train(); err != nil {
-		return err
+	if t.Btrain {
+		if err := t.Train(); err != nil {
+			return err
+		}
 	}
-	sets := DataSets(false)
-	Trace().Println("Dataset:")
-	Trace().Println(sets)
-	t.DumpSets(sets)
+	if t.Bdecode {
+		sets := DataSets(DEV_TRAIN)
+		Trace().Println("Dataset:")
+		Trace().Println(sets)
+		t.DumpSets(sets)
+	}
 	return nil
 }
 
@@ -145,6 +158,7 @@ func BnfTasksFrom(reader io.Reader) []TaskRuner {
 		t := NewBnfTask()
 		err := dec.Decode(t)
 		if err != nil {
+			Err().Println("BNF task decode:", err)
 			break
 		}
 		tasks = append(tasks, *t)

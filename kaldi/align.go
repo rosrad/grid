@@ -3,45 +3,72 @@ package kaldi
 
 import (
 	"encoding/json"
+	"fmt"
 	"io"
-	"strconv"
 )
 
 type Align struct {
 	ExpBase
-	Dynamic string
+	Feat
+	Extra string
 }
 
 func NewAlign(feat string) *Align {
-	return &Align{*NewExpBase(), "delta"}
+	return &Align{*NewExpBase(), *NewFeat(), ""}
 }
 
 func (a Align) OptStr() string {
-	return JoinArgs("--feat-type", a.Dynamic)
+	return a.FeatOpt()
 }
 
+func (a Align) TrainData() string {
+	cond := "cln"
+	if a.MC {
+		cond = "mc"
+	}
+
+	return a.ExpBase.TrainData(cond)
+}
+
+func (a Align) AlignCmd() (error, string) {
+
+	switch a.Exp {
+	case "GMM":
+		return nil, "steps/align_si.sh"
+	case "DNN":
+		return nil, "steps/nnet2/align.sh"
+	default:
+		return fmt.Errorf("No Effective Align for :%s", a.Exp), ""
+	}
+
+}
 func (a Align) MkAlign() error {
+	err, script := a.AlignCmd()
+	if err != nil {
+		Err().Println(err)
+		return err
+	}
 	cmd_str := JoinArgs(
-		"steps/align_si.sh",
-		"--nj "+strconv.Itoa(JobNum("decode")),
+		script,
+		"--nj", JobNum("train"),
 		a.OptStr(),
-		a.TrainData("mc"),
+		a.TrainData(),
 		Lang(),
 		a.ExpDir(),
 		a.AlignDir())
-	if err := BashRun(cmd_str); err != nil {
+	if err := LogCpuRun(cmd_str, a.AlignDir()); err != nil {
 		return err
 	}
+
 	return nil
 }
 
 type AlignTask struct {
 	Align
-	TaskBase *TaskBase
 }
 
 func NewAlignTask(feat string) *AlignTask {
-	return &AlignTask{*NewAlign(feat), NewTaskBase("align", "")}
+	return &AlignTask{*NewAlign(feat)}
 }
 
 func (t AlignTask) Identify() string {

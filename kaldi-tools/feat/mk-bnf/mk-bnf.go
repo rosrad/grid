@@ -20,8 +20,8 @@ func main() {
 	b.ModelConf.Dynamic = dy
 	b.ModelConf.Norm.Cmvn.Vars = vars
 	kaldi.WriteTask(b)
-	if err := b.Run(); err != nil {
-		kaldi.Err().Println()
-	}
+	// if err := b.Run(); err != nil {
+	// 	kaldi.Err().Println()
+	// }
 
 }

@@ -134,15 +134,23 @@ func RunTask(tag, scope string) error {
 
 func main() {
 	var list, scope, root, lm string
+	var manual bool
 	flag.StringVar(&root, "root", "", "root path")
 	flag.StringVar(&lm, "lm", "", "language model")
 	flag.StringVar(&list, "list", "", "task list")
 	flag.StringVar(&scope, "scope", "-1", "scope: number ,1-3,4,5 ")
+	flag.BoolVar(&manual, "manual", false, "manual to control servers (default=false) ")
 	flag.Parse()
 	kaldi.Init(root, lm)
 	defer kaldi.Uninit()
 	kaldi.Trace().Println("task-run")
-	kaldi.DevInstance().AutoSync()
+	if !manual {
+		kaldi.DevInstance().AutoSync()
+		kaldi.DevInstance().SortGpu()
+		kaldi.DevInstance().PrintNodes(true)
+		kaldi.DevInstance().SortCpu()
+		kaldi.DevInstance().PrintNodes(false)
+	}
 	if list != "" {
 		RunMultiTask(list)
 		return

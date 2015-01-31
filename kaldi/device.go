@@ -24,7 +24,7 @@ func NewNode() *Node {
 	return &Node{"", 0, 0.0, 0, 0.0}
 }
 func (gn Node) GpuUsage() float32 {
-	return gn.GpuMem + gn.CpuUsage()/100
+	return gn.GpuMem*(100-gn.LoadAve)/100 + gn.CpuUsage()/100
 }
 
 func (gn Node) CpuUsage() float32 {

@@ -2,6 +2,7 @@
 package kaldi
 
 import (
+	"fmt"
 	"github.com/codeskyblue/go-sh"
 	"os"
 	"path"
@@ -37,6 +38,13 @@ func JoinDots(elem ...string) string {
 		}
 	}
 	return ""
+}
+
+func FileExist(f string) error {
+	if _, err := os.Stat(f); !os.IsNotExist(err) {
+		return nil
+	}
+	return fmt.Errorf("file exist error: %s", f)
 }
 
 func InsureDir(dir string) {

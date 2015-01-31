@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"os"
 	"path"
 	"sync"
 )
@@ -19,20 +18,13 @@ func NewCmvn() *Cmvn {
 	return &Cmvn{*NewExpBase()}
 }
 
-func fileExist(f string) error {
-	if _, err := os.Stat(f); !os.IsNotExist(err) {
-		return nil
-	}
-	return fmt.Errorf("file exist error: %s", f)
-}
-
 func InsureScps(dir string) error {
 	utt2utt := path.Join(dir, "utt2utt")
 	utt2spk := path.Join(dir, "utt2spk")
-	if err := fileExist(utt2spk); err != nil {
+	if err := FileExist(utt2spk); err != nil {
 		return err
 	}
-	if err := fileExist(utt2utt); err != nil {
+	if err := FileExist(utt2utt); err != nil {
 		cmd := "cat " + utt2spk + "| awk '{print $1,$1}' > " + utt2utt
 		Trace().Println("Make utt2utt:", utt2utt)
 		return BashRun(cmd)

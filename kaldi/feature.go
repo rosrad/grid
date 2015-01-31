@@ -13,13 +13,13 @@ func JobStr() string {
 type Feat struct {
 	Dynamic   string   // raw,delta
 	Transform []string // transform dirs
-	Norm      *Norm    // Normalision config
+	Norm      Norm     // Normalision config
 	Context   int
 	MC        bool
 }
 
 func NewFeat() *Feat {
-	return &Feat{"raw", []string{}, NewNorm(), 0, true}
+	return &Feat{"raw", []string{}, *NewNorm(), 0, true}
 }
 
 func (f Feat) Condition() string {
@@ -93,7 +93,5 @@ func (f Feat) FeatOpt() string {
 }
 
 func (f Feat) OptStr() string {
-	opt := f.Norm.Cmvn.OptStr()
-	opt = JoinArgs(opt, f.FeatOpt())
-	return opt
+	return f.FeatOpt()
 }

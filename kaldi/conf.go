@@ -8,14 +8,15 @@ import (
 )
 
 type GlobalConf struct {
-	Root string
-	LM   string
+	Root      string
+	LM        string
+	DecodeSet string
 	TaskConf
 }
 
 var g_root string
 
-var g_conf = &GlobalConf{"tmp", "bg", *NewTaskConf()}
+var g_conf = &GlobalConf{"tmp", "bg", "", *NewTaskConf()}
 
 func SetRoot(root string) {
 	g_root = root

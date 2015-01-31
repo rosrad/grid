@@ -61,6 +61,8 @@ func TaskFromFunc(identifer string) FuncTaskFrom {
 		return PldaTasksFrom
 	case "combine":
 		return CombineTasksFrom
+	case "paste":
+		return PasterTasksFrom
 	}
 
 	return nil
@@ -108,7 +110,7 @@ func NewTaskConf() *TaskConf {
 }
 
 func Run(conf *TaskConf, runer MdlTask) error {
-	dev := DEV
+	dev := Str2DataType(SysConf().DecodeSet)
 	if conf.Btrain && SysConf().Btrain {
 		if err := runer.Train(); err != nil {
 			return err
@@ -118,8 +120,9 @@ func Run(conf *TaskConf, runer MdlTask) error {
 		if err := MkGraph(runer.TargetDir()); err != nil {
 			return err
 		}
+		fmt.Println("graph finished")
 	}
-	fmt.Println("graph finished")
+
 	if conf.Bdecode && SysConf().Bdecode {
 		fmt.Println("decoding")
 		if err := DecodeSets(runer, DataSets(dev)); err != nil {

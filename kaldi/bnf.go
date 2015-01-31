@@ -142,7 +142,7 @@ func (t BnfTask) Run() error {
 		}
 	}
 	if t.Bdecode {
-		sets := DataSets(DEV_TRAIN)
+		sets := DataSets(MC_ALL)
 		Trace().Println("Dataset:")
 		Trace().Println(sets)
 		t.DumpSets(sets)

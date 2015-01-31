@@ -7,17 +7,6 @@ type NormCmvn struct {
 	Vars   bool
 }
 
-func (c NormCmvn) OptStr() string {
-	opt_str := ""
-	// if c.Vars {
-	// 	opt_str = JoinArgs(opt_str, "--cmvn-opts", `"--norm-vars=true"`)
-	// }
-	// if c.PerUtt {
-	// 	opt_str = JoinArgs(opt_str, "--utt-cmvn", "perutt")
-	// }
-	return opt_str
-}
-
 func (c NormCmvn) CmdStr() string {
 	key := "utt2utt"
 	scp := "cmvn_utt2utt.scp"
@@ -44,23 +33,27 @@ func NewNormCmvn() *NormCmvn {
 
 func (norm Norm) NormStr() string {
 	cmd := ""
-	switch norm.Method {
-	case "cmvn":
+
+	if norm.Cmvn != nil {
 		cmd = norm.Cmvn.CmdStr()
-	case "log":
+	} else if norm.Log != nil {
 		cmd = "apply-log"
 	}
+
 	if cmd != "" {
 		return JoinArgs(cmd, "ark:-", "ark:-")
 	}
 	return ""
 }
 
+type LogNorm struct {
+}
+
 type Norm struct {
-	Method string // cmvn,log,len
-	Cmvn   *NormCmvn
+	Cmvn *NormCmvn
+	Log  *LogNorm
 }
 
 func NewNorm() *Norm {
-	return &Norm{"cmvn", NewNormCmvn()}
+	return &Norm{nil, nil}
 }

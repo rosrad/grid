@@ -47,22 +47,36 @@ const (
 	NOTRAIN
 	DEV_TRAIN
 	DEV
-	DEV_TEST
+	DEV_SIM
 	DEV_REAL
 	EVAL
 	REVERB_DEV
 	REVERB_EVAL
 	PHONE_DEV
 	CLN_TRAIN
+	MC_ALL
 )
+
+func Str2DataType(str string) DataType {
+	switch strings.ToLower(str) {
+	case "dev":
+		return DEV
+	case "dev_real":
+		return DEV_REAL
+	case "dev_sim":
+		return DEV_SIM
+	}
+	return DEV
+}
 
 func DataSets(data DataType) []string {
 	phone_sets := []string{"PHONE_dt", "PHONESEL_dt", "PHONEMLLD_dt"}
 	dev_sets := []string{"REVERB_dt", "REVERB_CLN_dt", "REVERB_REAL_dt"}
-	dev_test := []string{"REVERB_dt"}
+	dev_sim := []string{"REVERB_dt"}
 	dev_real := []string{"REVERB_REAL_dt"}
 	eval_sets := []string{"REVERB_et", "REVERB_CLN_et", "REVERB_REAL_et"}
 	train_sets := []string{"REVERB_tr_cut", "si_tr"}
+	mc_sets := []string{"REVERB_tr_cut", "REVERB_dt", "REVERB_REAL_dt"}
 	cln_train_sets := []string{"si_tr"}
 	switch data {
 	case ALL:
@@ -73,8 +87,10 @@ func DataSets(data DataType) []string {
 		return cln_train_sets
 	case DEV_TRAIN:
 		return append(append(phone_sets, dev_sets...), train_sets...)
-	case DEV_TEST:
-		return dev_test
+	case MC_ALL:
+		return mc_sets
+	case DEV_SIM:
+		return dev_sim
 	case DEV_REAL:
 		return dev_real
 	case DEV:

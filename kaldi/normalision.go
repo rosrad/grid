@@ -3,7 +3,6 @@ package kaldi
 
 type NormCmvn struct {
 	PerUtt bool
-	Mean   bool
 	Vars   bool
 }
 
@@ -28,7 +27,7 @@ func (c NormCmvn) CmdStr() string {
 }
 
 func NewNormCmvn() *NormCmvn {
-	return &NormCmvn{false, true, false}
+	return &NormCmvn{false, false}
 }
 
 func (norm Norm) NormStr() string {

@@ -59,7 +59,7 @@ func DecodeSets(dt Decoder, sets []string) error {
 		go func(set string) {
 			defer gw.Done()
 			if err := dt.Decode(set); err != nil {
-				Err().Println("Decode set:", set)
+				Err().Println("Decode set:", set, "err:", err)
 			}
 		}(set)
 	}

@@ -105,7 +105,11 @@ func (p PasterTask) Identify() string {
 }
 
 func (p PasterTask) Run() error {
-	return DecodeSets(p.Paster, DataSets(MC_ALL))
+	decode_set := TRAIN_MC_TEST
+	if len(SysConf().DecodeSet) != 0 {
+		decode_set = Str2DataType(SysConf().DecodeSet)
+	}
+	return DecodeSets(p.Paster, DataSets(decode_set))
 }
 
 func PasterTasksFrom(reader io.Reader) []TaskRuner {

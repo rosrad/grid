@@ -75,9 +75,9 @@ func (c Cmvn) Compute(set string) error {
 	return nil
 }
 
-func (c Cmvn) ComputeAll() {
+func (c Cmvn) ComputeAll(set DataType) {
 	var wg sync.WaitGroup
-	for _, set := range DataSets(ALL) {
+	for _, set := range DataSets(set) {
 		wg.Add(1)
 		go func(set string) {
 			defer wg.Done()
@@ -109,7 +109,11 @@ func (t CmvnTask) Identify() string {
 }
 
 func (c CmvnTask) Run() error {
-	c.ComputeAll()
+	set := TRAIN_MC_TEST
+	if len(SysConf().DecodeSet) != 0 {
+		set = Str2DataType(SysConf().DecodeSet)
+	}
+	c.ComputeAll(set)
 	return nil
 }
 

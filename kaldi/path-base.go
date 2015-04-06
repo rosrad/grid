@@ -91,7 +91,7 @@ func (p ExpBase) Subsets(set string) ([]string, error) {
 	if !strings.HasPrefix(set, "si_") {
 		sys_dirs, err := ioutil.ReadDir(path.Join(p.DataDir(), set))
 		if err != nil || len(sys_dirs) == 0 {
-			return []string{}, fmt.Errorf("No Subset in %s", set)
+			return []string{}, fmt.Errorf("No Subset in %s/%s", p.DataDir(), set)
 		}
 		sets = []string{}
 		for _, tmp := range sys_dirs {

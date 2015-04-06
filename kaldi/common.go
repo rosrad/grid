@@ -61,28 +61,35 @@ func DirExist(dir string) bool {
 }
 
 func LogGpuRun(cmd, dir string) error {
-	opt := DevInstance().AutoSelectGpu()
-	cwd, cerr := os.Getwd()
-	if cerr != nil {
-		return cerr
+	dev_cmd := cmd
+	if DevInstance().Inited() {
+		opt := DevInstance().AutoSelectGpu()
+		cwd, cerr := os.Getwd()
+		if cerr != nil {
+			return cerr
+		}
+		dev_cmd = JoinArgs("ssh", opt.Node,
+			"\"cd", cwd+";",
+			cmd+"\"")
+		Trace().Printf("HOST: %s\nCMD: %s\n", opt.Node, dev_cmd)
 	}
-	dev_cmd := JoinArgs("ssh", opt.Node,
-		"\"cd", cwd+";",
-		cmd+"\"")
-	Trace().Printf("HOST: %s\nCMD: %s\n", opt.Node, dev_cmd)
+
 	return LogRun(dev_cmd, dir)
 }
 
 func LogCpuRun(cmd, dir string) error {
-	opt := DevInstance().AutoSelectCpu()
-	cwd, cerr := os.Getwd()
-	if cerr != nil {
-		return cerr
+	dev_cmd := cmd
+	if DevInstance().Inited() {
+		opt := DevInstance().AutoSelectCpu()
+		cwd, cerr := os.Getwd()
+		if cerr != nil {
+			return cerr
+		}
+		dev_cmd = JoinArgs("ssh", opt.Node,
+			"\"cd", cwd+";",
+			cmd+"\"")
+		Trace().Printf("HOST: %s\nCMD: %s\n", opt.Node, dev_cmd)
 	}
-	dev_cmd := JoinArgs("ssh", opt.Node,
-		"\"cd", cwd+";",
-		cmd+"\"")
-	Trace().Printf("HOST: %s\nCMD: %s\n", opt.Node, dev_cmd)
 	return LogRun(dev_cmd, dir)
 }
 

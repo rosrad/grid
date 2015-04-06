@@ -65,17 +65,17 @@ func (b *BnfDnn) TargetDir() string {
 	return b.Dst.DeriveExp()
 }
 
-func (b *BnfDnn) CleanStorage() bool {
-	return b.Dst.Bakup() != 3
-}
+// func (b *BnfDnn) CleanStorage() bool {
+// 	return b.Dst.Bakup() != 3
+// }
 
-func (b *BnfDnn) InsureStorage() {
-	b.CleanStorage()
-	dirs := []string{b.TargetDir(), b.Dst.DataDir(), b.Dst.ParamDir()}
-	for _, dir := range dirs {
-		InsureDir(dir)
-	}
-}
+// func (b *BnfDnn) InsureStorage() {
+// 	b.CleanStorage()
+// 	dirs := []string{b.TargetDir(), b.Dst.DataDir(), b.Dst.ParamDir()}
+// 	for _, dir := range dirs {
+// 		InsureDir(dir)
+// 	}
+// }
 
 func (b *BnfDnn) Dump(set string) error {
 	dirs, err := b.Src.Subsets(set)
@@ -107,7 +107,6 @@ func (b *BnfDnn) Dump(set string) error {
 }
 
 func (b *BnfDnn) DumpSets(sets []string) {
-	b.InsureStorage()
 	c := NewCmvn()
 	c.ExpBase = b.Dst
 	var wg sync.WaitGroup
@@ -136,13 +135,17 @@ func (t BnfTask) Identify() string {
 }
 
 func (t BnfTask) Run() error {
-	if t.Btrain {
+	if t.Btrain && SysConf().Btrain {
 		if err := t.Train(); err != nil {
 			return err
 		}
 	}
-	if t.Bdecode {
-		sets := DataSets(MC_ALL)
+	decode_set := TRAIN_MC_TEST
+	if len(SysConf().DecodeSet) != 0 {
+		decode_set = Str2DataType(SysConf().DecodeSet)
+	}
+	if t.Bdecode && SysConf().Bdecode {
+		sets := DataSets(decode_set)
 		Trace().Println("Dataset:")
 		Trace().Println(sets)
 		t.DumpSets(sets)

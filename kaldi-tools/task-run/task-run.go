@@ -151,6 +151,7 @@ func main() {
 		kaldi.DevInstance().SortCpu()
 		kaldi.DevInstance().PrintNodes(false)
 	}
+
 	if list != "" {
 		RunMultiTask(list)
 		return

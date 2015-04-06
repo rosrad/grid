@@ -91,6 +91,10 @@ func DevInstance() *DevSel {
 	return dev_instance
 }
 
+func (gs *DevSel) Inited() bool {
+	return len(gs.Nodes) != 0
+}
+
 func (gs *DevSel) AutoSync() {
 	dev_instance.Init()
 	log.Println("DevSel AutoSync Start...")
@@ -109,6 +113,7 @@ func contains(s []int, d int) bool {
 
 func (gs *DevSel) Init() {
 	exclude := []int{8, 11}
+	exclude = append(exclude, SysConf().ExcludeNode...)
 	const MaxNode = 13
 	for i := 1; i < MaxNode+1; i++ {
 		if contains(exclude, i) {

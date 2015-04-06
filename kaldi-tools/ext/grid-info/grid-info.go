@@ -13,6 +13,8 @@ func main() {
 	// gs.SyncInfo()
 	// gs.SortGpu()
 	// gs.PrintNodes()
+	kaldi.Init("", "")
+	defer kaldi.Uninit()
 	kaldi.DevInstance().AutoSync()
 	for {
 		kaldi.DevInstance().SortGpu()

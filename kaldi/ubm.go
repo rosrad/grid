@@ -21,7 +21,11 @@ func (u Ubm) Identify() string {
 }
 
 func (u Ubm) AlignDir() string {
-	return u.Src.ExpDir()
+	return u.Ali.ExpDir()
+}
+
+func (u Ubm) SourceData() string {
+	return u.Src.DataDir()
 }
 
 func (u Ubm) TargetDir() string {
@@ -37,7 +41,7 @@ func (u Ubm) Train() error {
 		"steps/train_ubm_splice.sh",
 		u.OptStr(),
 		"100",
-		u.Dst.TrainData("mc"),
+		u.Src.TrainData("mc"),
 		Lang(),
 		u.AlignDir(),
 		u.TargetDir())

@@ -130,7 +130,7 @@ func (f Fmllr) MkMatrix() error {
 
 func (f Fmllr) TransformAll() error {
 	var wg sync.WaitGroup
-	for _, set := range DataSets(DEV_TRAIN) {
+	for _, set := range DataSets(TRAIN_MC_TEST) {
 		wg.Add(1)
 		go func(set string) {
 			defer wg.Done()

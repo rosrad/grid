@@ -35,7 +35,7 @@ func (c Combine) Src2Decode(set string) string {
 }
 
 func (c Combine) Subsets(set string) ([]string, error) {
-	return c.Dst.Subsets(set)
+	return c.Src.Subsets(set)
 }
 
 func (c Combine) DecodeDir(set string) string {
@@ -58,15 +58,15 @@ func (c Combine) Decode(set string) error {
 	var wg sync.WaitGroup
 
 	for _, dir := range dirs {
-		wg.Add(1)
 		cmd_str := JoinArgs(
 			"local/score_combine.sh",
-			path.Join(c.Dst.DataDir(), dir),
+			path.Join(c.Src.DataDir(), dir),
 			TestLang(),
 			c.Src1Decode(dir),
 			c.Src2Decode(dir),
 			c.DecodeDir(dir))
 		Trace().Println(cmd_str)
+		wg.Add(1)
 		go func(cmd, dir string) {
 			defer wg.Done()
 			if err := LogCpuRun(cmd, dir); err != nil {
@@ -97,6 +97,7 @@ func (c CombineTask) Identify() string {
 
 func (c CombineTask) Run() error {
 	c.TaskConf.Btrain = false // ignore train step for system combination
+	c.TaskConf.Bgraph = false // ignore train step for system combination
 	return Run(c.TaskConf, c.Combine)
 }
 

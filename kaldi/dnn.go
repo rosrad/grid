@@ -56,7 +56,7 @@ func NewDnn() *Dnn {
 }
 
 func (d Dnn) AlignDir() string {
-	return d.Src.AlignDir()
+	return d.Ali.AlignDir()
 }
 
 func (d Dnn) TargetDir() string {
@@ -64,7 +64,7 @@ func (d Dnn) TargetDir() string {
 }
 
 func (d Dnn) Subsets(set string) ([]string, error) {
-	return d.Dst.Subsets(set)
+	return d.Src.Subsets(set)
 }
 
 func (d Dnn) DecodeDir(dir string) string {
@@ -88,7 +88,7 @@ func (d Dnn) Train() error {
 		"--add-layers-period 1",
 		"--shrink-interval 3",
 		d.OptStr(),
-		d.Dst.TrainData(d.Condition()),
+		d.Src.TrainData(d.Condition()),
 		Lang(),
 		d.AlignDir(),
 		d.TargetDir())
@@ -114,7 +114,7 @@ func (d Dnn) Decode(set string) error {
 			"--nj", JobNum("decode"),
 			d.FeatOpt(),
 			Graph(d.TargetDir()),
-			path.Join(d.Dst.DataDir(), dir),
+			path.Join(d.Src.DataDir(), dir),
 			d.DecodeDir(dir))
 		wg.Add(1)
 		go func(cmd_str, dir string) {

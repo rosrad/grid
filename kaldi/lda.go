@@ -25,11 +25,11 @@ func (l Lda) TargetDir() string {
 }
 
 func (l Lda) AlignDir() string {
-	return l.Src.AlignDir()
+	return l.Ali.AlignDir()
 }
 
 func (l Lda) Subsets(set string) ([]string, error) {
-	return l.Dst.Subsets(set)
+	return l.Src.Subsets(set)
 }
 
 func (l Lda) DecodeDir(set string) string {
@@ -38,7 +38,6 @@ func (l Lda) DecodeDir(set string) string {
 
 func (l Lda) OptStr() string {
 	return l.Feat.OptStr()
-	// JoinArgs(l.ModelConf.OptStr(), l.LdaConf.OptStr())
 }
 
 func (l Lda) Train() error {
@@ -46,7 +45,7 @@ func (l Lda) Train() error {
 		"steps/train_lda_mllt.sh",
 		l.OptStr(),
 		GaussConf(),
-		l.Dst.TrainData(l.Condition()),
+		l.Src.TrainData(l.Condition()),
 		Lang(),
 		l.AlignDir(),
 		l.TargetDir(),
@@ -72,7 +71,7 @@ func (l Lda) Decode(set string) error {
 			"--nj ", JobNum("decode"),
 			l.FeatOpt(),
 			Graph(l.TargetDir()),
-			path.Join(l.Dst.DataDir(), dir),
+			path.Join(l.Src.DataDir(), dir),
 			l.DecodeDir(dir))
 		if err := LogCpuRun(cmd_str, l.DecodeDir(dir)); err != nil {
 			Err().Println(err)

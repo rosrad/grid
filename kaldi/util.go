@@ -43,66 +43,114 @@ func TrainName(cond string) string {
 type DataType int
 
 const (
-	ALL DataType = 1 + iota
-	NOTRAIN
-	DEV_TRAIN
+	TEST DataType = 1 + iota
 	DEV
 	DEV_SIM
 	DEV_REAL
 	EVAL
-	REVERB_DEV
-	REVERB_EVAL
+	EVAL_SIM
+	EVAL_REAL
+	PHONE
 	PHONE_DEV
-	CLN_TRAIN
-	MC_ALL
+	PHONE_EVAL
+	PHONE_TEST
+	TRAIN
+	TRAIN_MC
+	TRAIN_MC_DEV
+	TRAIN_MC_TEST
+	TRAIN_CLN
 )
 
+func SystemSet() DataType {
+	return Str2DataType(SysConf().DecodeSet)
+}
+
 func Str2DataType(str string) DataType {
-	switch strings.ToLower(str) {
-	case "dev":
-		return DEV
-	case "dev_real":
-		return DEV_REAL
-	case "dev_sim":
-		return DEV_SIM
+	type Pair struct {
+		str       string
+		data_type DataType
+	}
+
+	dict := []Pair{
+		Pair{"TEST", TEST},
+		Pair{"DEV", DEV},
+		Pair{"DEV_SIM", DEV_SIM},
+		Pair{"DEV_REAL", DEV_REAL},
+		Pair{"EVAL", EVAL},
+		Pair{"EVAL_SIM", EVAL_SIM},
+		Pair{"EVAL_REAL", EVAL_REAL},
+		Pair{"PHONE", PHONE},
+		Pair{"PHONE_DEV", PHONE_DEV},
+		Pair{"PHONE_EVAL", PHONE_EVAL},
+		Pair{"PHONE_TEST", PHONE_TEST},
+		Pair{"TRAIN", TRAIN},
+		Pair{"TRAIN_MC", TRAIN_MC},
+		Pair{"TRAIN_MC_DEV", TRAIN_MC_DEV},
+		Pair{"TRAIN_MC_TEST", TRAIN_MC_TEST},
+		Pair{"TRAIN_CLN", TRAIN_CLN},
+	}
+
+	key := strings.ToUpper(str)
+
+	for _, p := range dict {
+		if p.str == key {
+			return p.data_type
+		}
 	}
 	return DEV
 }
 
 func DataSets(data DataType) []string {
-	phone_sets := []string{"PHONE_dt", "PHONESEL_dt", "PHONEMLLD_dt"}
-	dev_sets := []string{"REVERB_dt", "REVERB_CLN_dt", "REVERB_REAL_dt"}
+	phone := []string{"PHONE_dt", "PHONESEL_dt", "PHONEMLLD_dt"}
+
 	dev_sim := []string{"REVERB_dt"}
 	dev_real := []string{"REVERB_REAL_dt"}
-	eval_sets := []string{"REVERB_et", "REVERB_CLN_et", "REVERB_REAL_et"}
-	train_sets := []string{"REVERB_tr_cut", "si_tr"}
-	mc_sets := []string{"REVERB_tr_cut", "REVERB_dt", "REVERB_REAL_dt"}
-	cln_train_sets := []string{"si_tr"}
+	dev := append(dev_sim, dev_real...)
+
+	eval_sim := []string{"REVERB_et"}
+	eval_real := []string{"REVERB_REAL_et"}
+	eval := append(eval_sim, eval_real...)
+
+	test := append(dev, eval...)
+
+	train_mc := []string{"REVERB_tr_cut"}
+	train_cln := []string{"si_tr"}
+	train := append(train_mc, train_cln...)
+
 	switch data {
-	case ALL:
-		return append(append(append(phone_sets, dev_sets...), eval_sets...), train_sets...)
-	case NOTRAIN:
-		return append(append(phone_sets, dev_sets...), eval_sets...)
-	case CLN_TRAIN:
-		return cln_train_sets
-	case DEV_TRAIN:
-		return append(append(phone_sets, dev_sets...), train_sets...)
-	case MC_ALL:
-		return mc_sets
+	case TEST:
+		return append(dev, eval...)
 	case DEV_SIM:
 		return dev_sim
 	case DEV_REAL:
 		return dev_real
 	case DEV:
-		return append(phone_sets, dev_sets...)
+		return eval
+	case EVAL_SIM:
+		return eval_sim
+	case EVAL_REAL:
+		return eval_real
 	case EVAL:
-		return eval_sets
-	case REVERB_DEV:
-		return dev_sets
-	case REVERB_EVAL:
-		return eval_sets
+		return eval
+	case PHONE:
+		return phone
+
 	case PHONE_DEV:
-		return phone_sets
+		return append(dev, phone...)
+	case PHONE_EVAL:
+		return append(eval, phone...)
+	case PHONE_TEST:
+		return append(test, phone...)
+	case TRAIN_MC:
+		return train_mc
+	case TRAIN_CLN:
+		return train_cln
+	case TRAIN:
+		return train
+	case TRAIN_MC_DEV:
+		return append(train, dev...)
+	case TRAIN_MC_TEST:
+		return append(train, test...)
 	}
 	return []string{}
 }

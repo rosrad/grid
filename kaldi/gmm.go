@@ -24,11 +24,11 @@ func (g Gmm) TargetDir() string {
 }
 
 func (g Gmm) AlignDir() string {
-	return g.Src.AlignDir()
+	return g.Ali.AlignDir()
 }
 
 func (g Gmm) Subsets(set string) ([]string, error) {
-	return g.Dst.Subsets(set)
+	return g.Src.Subsets(set)
 }
 
 func (g Gmm) DecodeDir(set string) string {
@@ -44,14 +44,6 @@ func (g Gmm) OptStr() string {
 	return JoinArgs(var_opt, g.Feat.OptStr())
 }
 
-func (g Gmm) TrainData() string {
-	cond := "mc"
-	if !g.MC {
-		cond = "cln"
-	}
-	return g.Dst.TrainData(cond)
-}
-
 func (g Gmm) Gaussian() string {
 	gaussian := "2000 10000"
 	if g.MC {
@@ -65,7 +57,7 @@ func (g Gmm) Train() error {
 		"steps/train_deltas.sh",
 		g.OptStr(),
 		g.Gaussian(),
-		g.Dst.TrainData(g.Condition()),
+		g.Src.TrainData(g.Condition()),
 		Lang(),
 		g.AlignDir(),
 		g.TargetDir(),
@@ -92,7 +84,7 @@ func (g Gmm) Decode(set string) error {
 			"--nj ", JobNum("decode"),
 			g.FeatOpt(),
 			Graph(g.TargetDir()),
-			path.Join(g.Dst.DataDir(), dir),
+			path.Join(g.Src.DataDir(), dir),
 			g.DecodeDir(dir))
 		go func(cmd, dir string) {
 			defer wg.Done()

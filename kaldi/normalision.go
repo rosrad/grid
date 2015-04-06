@@ -37,6 +37,8 @@ func (norm Norm) NormStr() string {
 		cmd = norm.Cmvn.CmdStr()
 	} else if norm.Log != nil {
 		cmd = "apply-log"
+	} else if norm.Logit != nil {
+		cmd = "apply-logit"
 	}
 
 	if cmd != "" {
@@ -48,11 +50,15 @@ func (norm Norm) NormStr() string {
 type LogNorm struct {
 }
 
+type LogitNorm struct {
+}
+
 type Norm struct {
-	Cmvn *NormCmvn
-	Log  *LogNorm
+	Cmvn  *NormCmvn
+	Log   *LogNorm
+	Logit *LogitNorm
 }
 
 func NewNorm() *Norm {
-	return &Norm{nil, nil}
+	return &Norm{nil, nil, nil}
 }

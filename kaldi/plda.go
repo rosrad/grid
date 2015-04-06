@@ -23,12 +23,16 @@ func (p Plda) TargetDir() string {
 	return p.Dst.ExpDir()
 }
 
+func (p Plda) SourceData() string {
+	return p.Src.DataDir()
+}
+
 func (p Plda) AlignDir() string {
-	return p.Src.AlignDir()
+	return p.Ali.AlignDir()
 }
 
 func (p Plda) Subsets(set string) ([]string, error) {
-	return p.Dst.Subsets(set)
+	return p.Src.Subsets(set)
 }
 
 func (p Plda) DecodeDir(set string) string {
@@ -70,7 +74,7 @@ func (p Plda) Train() error {
 		"steps/train_plda.sh",
 		p.OptStr(),
 		"2400 20000",
-		p.Dst.TrainData(p.Condition()),
+		p.Src.TrainData(p.Condition()),
 		Lang(),
 		p.AlignDir(),
 		p.TargetDir(),
@@ -84,7 +88,7 @@ func (p Plda) Train() error {
 
 // implement the Decoder interface
 func (p Plda) Decode(set string) error {
-	dirs, err := p.Dst.Subsets(set)
+	dirs, err := p.Subsets(set)
 	if err != nil {
 		return err
 	}
@@ -97,7 +101,7 @@ func (p Plda) Decode(set string) error {
 			"--nj ", JobNum("decode"),
 			p.FeatOpt(),
 			Graph(p.TargetDir()),
-			path.Join(p.Dst.DataDir(), dir),
+			path.Join(p.SourceData(), dir),
 			p.DecodeDir(dir))
 		go func(cmd, dir string) {
 			defer wg.Done()
@@ -142,7 +146,7 @@ func PldaTasksFrom(reader io.Reader) []TaskRuner {
 		t := NewPldaTask()
 		err := dec.Decode(t)
 		if err != nil {
-			Err().Println("GMM Decode Error:", err)
+			Err().Println("PLDA Decode Error:", err)
 			break
 		}
 		tasks = append(tasks, *t)

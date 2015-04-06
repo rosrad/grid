@@ -12,11 +12,12 @@ type GlobalConf struct {
 	LM        string
 	DecodeSet string
 	TaskConf
+	ExcludeNode []int
 }
 
 var g_root string
 
-var g_conf = &GlobalConf{"tmp", "bg", "", *NewTaskConf()}
+var g_conf = &GlobalConf{"tmp", "bg", "", *NewTaskConf(), []int{}}
 
 func SetRoot(root string) {
 	g_root = root

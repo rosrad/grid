@@ -49,6 +49,8 @@ func TaskFromFunc(identifer string) FuncTaskFrom {
 		return GmmTasksFrom
 	case "lda":
 		return LdaTasksFrom
+	case "net":
+		return NetTasksFrom
 	case "dnn":
 		return DnnTasksFrom
 	case "discdnn":
@@ -110,7 +112,7 @@ func NewTaskConf() *TaskConf {
 }
 
 func Run(conf *TaskConf, runer MdlTask) error {
-	dev := Str2DataType(SysConf().DecodeSet)
+	dev := SystemSet()
 	if conf.Btrain && SysConf().Btrain {
 		if err := runer.Train(); err != nil {
 			return err

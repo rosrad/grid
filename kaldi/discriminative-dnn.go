@@ -77,7 +77,7 @@ func (d DiscDnn) OptStr() string {
 func (d DiscDnn) DenlatsOptStr() string {
 	return JoinArgs(
 		d.Model.Feat.OptStr(),
-		"--nj", JobNum("decode"),
+		"--nj", MaxNum(d.Dst.TrainData("mc")),
 		"--sub-split 20",
 		"--num-threads 6")
 }
@@ -124,7 +124,7 @@ func (d DiscDnn) Decode(set string) error {
 	for _, dir := range items {
 		cmd_str := JoinArgs(
 			"steps/nnet2/decode.sh",
-			"--nj", JobNum("decode"),
+			"--nj", MaxNum(path.Join(d.Dst.DataDir(), dir)),
 			d.Model.OptStr(),
 			Graph(d.TargetDir()),
 			path.Join(d.Dst.DataDir(), dir),

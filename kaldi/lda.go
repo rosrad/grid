@@ -68,7 +68,7 @@ func (l Lda) Decode(set string) error {
 	for _, dir := range dirs {
 		cmd_str := JoinArgs(
 			"steps/decode.sh",
-			"--nj ", JobNum("decode"),
+			"--nj ", MaxNum(path.Join(l.Src.DataDir(), dir)),
 			l.FeatOpt(),
 			Graph(l.TargetDir()),
 			path.Join(l.Src.DataDir(), dir),

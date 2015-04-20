@@ -7,7 +7,6 @@ import (
 	"os"
 	"path"
 	"path/filepath"
-	"strings"
 	"time"
 )
 
@@ -87,16 +86,22 @@ func (p ExpBase) Bakup() int {
 }
 
 func (p ExpBase) Subsets(set string) ([]string, error) {
-	sets := []string{set}
-	if !strings.HasPrefix(set, "si_") {
-		sys_dirs, err := ioutil.ReadDir(path.Join(p.DataDir(), set))
-		if err != nil || len(sys_dirs) == 0 {
-			return []string{}, fmt.Errorf("No Subset in %s/%s", p.DataDir(), set)
+	sets := []string{}
+	if FileExist(path.Join(p.DataDir(), set, "feats.scp")) == nil {
+		return []string{set}, nil
+	}
+
+	sys_dirs, _ := ioutil.ReadDir(path.Join(p.DataDir(), set))
+	for _, tmp := range sys_dirs {
+		if !tmp.IsDir() ||
+			FileExist(path.Join(p.DataDir(), set, tmp.Name(), "feats.scp")) != nil {
+			continue
 		}
-		sets = []string{}
-		for _, tmp := range sys_dirs {
-			sets = append(sets, path.Join(set, tmp.Name()))
-		}
+		sets = append(sets, path.Join(set, tmp.Name()))
+	}
+
+	if len(sets) == 0 {
+		return []string{}, fmt.Errorf("No Exist dataset")
 	}
 	return sets, nil
 }

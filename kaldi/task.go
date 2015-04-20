@@ -65,6 +65,8 @@ func TaskFromFunc(identifer string) FuncTaskFrom {
 		return CombineTasksFrom
 	case "paste":
 		return PasterTasksFrom
+	case "mfcc":
+		return MfccTasksFrom
 	}
 
 	return nil

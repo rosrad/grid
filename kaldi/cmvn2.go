@@ -33,12 +33,16 @@ func InsureScps(dir string) error {
 }
 
 func (c Cmvn) Compute(set string) error {
+	Trace().Println("Set:", set)
 	dirs, err := c.Subsets(set)
 	if err != nil {
+		Err().Println(err)
 		return err
 	}
+	Trace().Println(dirs)
 	var wg sync.WaitGroup
 	for _, dir := range dirs {
+		Trace().Println("Dir:", dir)
 		wg.Add(1)
 		go func(dir string) {
 			defer wg.Done()

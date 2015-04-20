@@ -29,7 +29,7 @@ func (m Mono) Identify() string {
 func (m Mono) OptStr() string {
 	opt := JoinArgs(
 		"--boost-silence 1.25",
-		"--nj", JobNum("train"),
+		"--nj", MaxNum(m.TrainData()),
 		m.Model.OptStr())
 	return opt
 }
@@ -79,10 +79,12 @@ func (mt MonoTask) Identify() string {
 }
 
 func (mt MonoTask) Run() error {
-	if mt.Btrain {
+	if mt.Btrain && SysConf().Btrain {
 		if err := mt.Train(); err != nil {
 			return err
 		}
+	}
+	if mt.Bgraph && SysConf().Bgraph {
 		if err := mt.MkGraph(); err != nil {
 			return err
 		}

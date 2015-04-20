@@ -43,7 +43,7 @@ func (f Fmllr) TrainMatrix() error {
 	// using align_fmllr to get the align fmllr matrix
 	cmd_str := JoinArgs(
 		"steps/align_fmllr.sh",
-		"--nj", JobNum("train"),
+		"--nj", MaxNum(f.Src.TrainData(f.Condition())),
 		f.Src.TrainData(f.Condition()),
 		Lang(),
 		f.Src.ExpDir(),
@@ -70,7 +70,7 @@ func (f Fmllr) TestMatrix(set string) error {
 		wg.Add(1)
 		cmd_str := JoinArgs(
 			"steps/decode_fmllr.sh",
-			"--nj", JobNum("decode"),
+			"--nj", MaxNum(path.Join(f.Src.DataDir(), dir)),
 			Graph(f.Src.ExpDir()),
 			path.Join(f.Src.DataDir(), dir),
 			f.FakeDecodeDir(dir))
@@ -158,7 +158,7 @@ func (f Fmllr) Transform(set string) error {
 		transform_dir := f.TransformDir(dir)
 		cmd_str := JoinArgs(
 			"steps/nnet/make_fmllr_feats.sh",
-			"--nj", JobNum("decode"),
+			"--nj", MaxNum(path.Join(f.Src.DataDir(), dir)),
 			"--transform-dir", transform_dir,
 			path.Join(f.Dst().DataDir(), dir), // target
 			path.Join(f.Src.DataDir(), dir),   // source

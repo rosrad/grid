@@ -145,7 +145,9 @@ func CpuBashOutput(cmd string) (out []byte, err error) {
 }
 
 func BashOutput(cmd string) (out []byte, err error) {
-	return sh.Command("bash", "-c", cmd).Output()
+	s := sh.Command("bash", "-c", cmd)
+	s.Stderr = nil
+	return s.Output()
 }
 
 func Now() string {

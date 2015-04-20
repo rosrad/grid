@@ -98,7 +98,7 @@ func (p Plda) Decode(set string) error {
 		cmd_str := JoinArgs(
 			"steps/decode_plda.sh",
 			"--stage -1",
-			"--nj ", JobNum("decode"),
+			"--nj ", MaxNum(path.Join(p.SourceData(), dir)),
 			p.FeatOpt(),
 			Graph(p.TargetDir()),
 			path.Join(p.SourceData(), dir),

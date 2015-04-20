@@ -88,7 +88,7 @@ func (b *BnfDnn) Dump(set string) error {
 		dst_data := path.Join(b.Dst.DataDir(), dir)
 		cmd_str := JoinArgs(
 			"steps/nnet2/dump_bottleneck_features.sh",
-			"--nj", JobNum("decode"),
+			"--nj", MaxNum(path.Join(b.Src.DataDir(), dir)),
 			b.FeatOpt(),
 			path.Join(b.Src.DataDir(), dir), // source dir
 			dst_data,                        // bnf destination dir

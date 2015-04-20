@@ -81,7 +81,7 @@ func (g Gmm) Decode(set string) error {
 		wg.Add(1)
 		cmd_str := JoinArgs(
 			"steps/decode.sh",
-			"--nj ", JobNum("decode"),
+			"--nj ", MaxNum(path.Join(g.Src.DataDir(), dir)),
 			g.FeatOpt(),
 			Graph(g.TargetDir()),
 			path.Join(g.Src.DataDir(), dir),

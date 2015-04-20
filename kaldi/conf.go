@@ -5,6 +5,7 @@ import (
 	"os"
 	"path"
 	"strconv"
+	"strings"
 )
 
 type GlobalConf struct {
@@ -50,28 +51,37 @@ func RootPath() string {
 }
 
 func Lang() string {
-	return path.Join(RootPath(), "data", "lang")
+	// return path.Join(RootPath(), "data", "lang")
+	return path.Join("data", "lang")
 }
 
 func TestLang() string {
-	return path.Join(RootPath(), "data", "lang_test_"+SysConf().LM+"_5k")
+	// return path.Join(RootPath(), "data", "lang_test_"+SysConf().LM+"_5k")
+	return path.Join("data", "lang_test_"+SysConf().LM+"_5k")
 }
 
 func Graph(target string) string {
 	return path.Join(target, "graph_"+SysConf().LM+"_5k")
 }
 
-func JobNum(job string) string {
-	parallel := 1
-	switch job {
-	case "decode":
-		parallel = 4
-	case "train":
-		parallel = 16
-	case "dnn":
-		parallel = 16
+func SpkNum(dir string) int {
+	cmd := JoinArgs("cat",
+		path.Join(dir, "spk2utt"),
+		"|wc -l")
+	spknum, err := BashOutput(cmd)
+	if err != nil {
+		Err().Println(err)
 	}
-	return strconv.Itoa(parallel)
+	num, _ := strconv.Atoi(strings.TrimSpace(string(spknum[:len(spknum)])))
+	return num
+}
+
+func MaxNum(dir string) string {
+	max := 16
+	if nspk := SpkNum(dir); nspk < max {
+		max = nspk
+	}
+	return strconv.Itoa(max)
 }
 
 func GaussConf() string {

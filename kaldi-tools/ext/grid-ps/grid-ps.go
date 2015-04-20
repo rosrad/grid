@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"github.com/rosrad/kaldi"
 	"github.com/rosrad/util"
-	"log"
 	"strings"
 	"sync"
 )
@@ -37,7 +36,7 @@ func SyncPs(svr string) []ProcInfo {
 		"\"ps -u ren -o comm\"")
 	out, err := kaldi.BashOutput(cmd_str)
 	if err != nil {
-		log.Println("Err:", err)
+		// log.Println("Err:", err)
 	} else {
 		str := strings.Trim(string(out), "\n ")
 		ps := strings.Split(str, "\n")

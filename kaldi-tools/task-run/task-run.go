@@ -144,6 +144,7 @@ func main() {
 	kaldi.Init(root, lm)
 	defer kaldi.Uninit()
 	kaldi.Trace().Println("task-run")
+
 	if !manual {
 		kaldi.DevInstance().AutoSync()
 		kaldi.DevInstance().SortGpu()
@@ -163,6 +164,5 @@ func main() {
 	}
 	tag := flag.Arg(0)
 	kaldi.Trace().Println("tag", tag)
-	kaldi.Trace().Println("Tasks: DNN, GMM, MK-BNF,MK-FMLLR")
 	RunTask(tag, scope)
 }

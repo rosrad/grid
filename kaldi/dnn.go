@@ -111,7 +111,7 @@ func (d Dnn) Decode(set string) error {
 		cmd_str := JoinArgs(
 			"steps/nnet2/decode.sh",
 			"--num-threads 1",
-			"--nj", JobNum("decode"),
+			"--nj", MaxNum(path.Join(d.Src.DataDir(), dir)),
 			d.FeatOpt(),
 			Graph(d.TargetDir()),
 			path.Join(d.Src.DataDir(), dir),

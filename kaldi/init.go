@@ -24,6 +24,7 @@ var g_warn, g_err, g_trace *log.Logger
 
 func Init(root, LM string) {
 	LoadGlobalConf()
+	LoadDataConf()
 	if "" != root {
 		SysConf().Root = root
 	}

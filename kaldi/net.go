@@ -11,20 +11,22 @@ import (
 
 // training config struct
 type NetConf struct {
-	MinBatch int
-	Jobs     int
-	Nodes    int
-	Context  int
-	Layers   int
-	Gpu      bool
+	MinBatch   int
+	Jobs       int
+	Nodes      int
+	Context    int
+	Layers     int
+	Gpu        bool
+	NoPretrain bool
 }
 
 func NewNetConf() *NetConf {
 	return &NetConf{
-		Nodes:   500,
-		Context: 0,
-		Layers:  2,
-		Gpu:     true}
+		Nodes:      500,
+		Context:    0,
+		Layers:     2,
+		Gpu:        true,
+		NoPretrain: false}
 }
 
 func (conf *NetConf) OptStr() string {
@@ -118,8 +120,9 @@ func (n Net) TrainNet() error {
 		"steps/nnet/train.sh",
 		"--dbn", dbn,
 		"--learn-rate 0.008",
+		"--hid-layers 0",
 		"--feature-transform", ft,
-		n.OptStr(),
+		n.FeatOpt(),
 		tr, cv,
 		Lang(),
 		n.AlignDir(),
@@ -135,9 +138,11 @@ func (n Net) TrainNet() error {
 
 func (n Net) Train() error {
 	n.SubTrainData()
-	err := n.TrainRBM()
-	if err != nil {
-		return err
+	if !n.NetConf.NoPretrain {
+		err := n.TrainRBM()
+		if err != nil {
+			return err
+		}
 	}
 	return n.TrainNet()
 }
@@ -156,7 +161,7 @@ func (n Net) Decode(set string) error {
 			"--feature-transform", ft,
 			"--num-threads 1",
 			"--config conf/decode_dnn.config",
-			"--nj", JobNum("decode"),
+			"--nj", MaxNum(path.Join(n.Src.DataDir(), dir)),
 			n.FeatOpt(),
 			Graph(n.TargetDir()),
 			path.Join(n.Src.DataDir(), dir),

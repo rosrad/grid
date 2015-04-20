@@ -50,7 +50,7 @@ func (a Align) MkAlign() error {
 	}
 	cmd_str := JoinArgs(
 		script,
-		"--nj", JobNum("train"),
+		"--nj", MaxNum(a.TrainData()),
 		a.OptStr(),
 		a.TrainData(),
 		Lang(),

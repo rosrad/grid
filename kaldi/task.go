@@ -41,16 +41,22 @@ func TaskFromFunc(identifer string) FuncTaskFrom {
 		return FmllrTasksFrom
 	case "align":
 		return AlignTasksFrom
+	case "denlats":
+		return DenLatsTasksFrom
 	case "cmvn":
 		return CmvnTasksFrom
 	case "mono":
 		return MonoTasksFrom
 	case "gmm":
 		return GmmTasksFrom
+	case "sat":
+		return SatTasksFrom
 	case "lda":
 		return LdaTasksFrom
 	case "net":
 		return NetTasksFrom
+	case "mpe":
+		return MPETasksFrom
 	case "dnn":
 		return DnnTasksFrom
 	case "discdnn":
@@ -67,6 +73,8 @@ func TaskFromFunc(identifer string) FuncTaskFrom {
 		return PasterTasksFrom
 	case "mfcc":
 		return MfccTasksFrom
+	case "fbank":
+		return FBankTasksFrom
 	}
 
 	return nil
@@ -144,10 +152,11 @@ func Run(conf *TaskConf, runer MdlTask) error {
 				continue
 			}
 
-			res_str := fmt.Sprintf("#%s\n%s\n",
+			res_str := fmt.Sprintf("#%s\n#%s\n%s\n",
 				runer.TargetDir(),
+				set,
 				FormatScore(result))
-			Trace().Println(res_str)
+			fmt.Println(res_str)
 			if len(result) > 0 {
 				msg += res_str
 			}

@@ -36,16 +36,12 @@ func (l Lda) DecodeDir(set string) string {
 	return MkDecode(l.TargetDir(), set)
 }
 
-func (l Lda) OptStr() string {
-	return l.Feat.OptStr()
-}
-
 func (l Lda) Train() error {
 	cmd_str := JoinArgs(
 		"steps/train_lda_mllt.sh",
 		l.OptStr(),
-		GaussConf(),
-		l.Src.TrainData(l.Condition()),
+		l.Extra.Args,
+		l.TrainData(),
 		Lang(),
 		l.AlignDir(),
 		l.TargetDir(),
@@ -67,9 +63,9 @@ func (l Lda) Decode(set string) error {
 	l.Transform = append(l.Transform, path.Join(l.TargetDir(), "final.mat"))
 	for _, dir := range dirs {
 		cmd_str := JoinArgs(
-			"steps/decode.sh",
+			DecodeCmd(l.Identify()),
 			"--nj ", MaxNum(path.Join(l.Src.DataDir(), dir)),
-			l.FeatOpt(),
+			l.FeatOpt(l.AlignDir()),
 			Graph(l.TargetDir()),
 			path.Join(l.Src.DataDir(), dir),
 			l.DecodeDir(dir))

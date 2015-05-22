@@ -4,7 +4,6 @@ package kaldi
 import (
 	"fmt"
 	"path"
-	"strconv"
 	"strings"
 	"sync"
 )
@@ -80,10 +79,13 @@ func ScoreSets(ct Counter, sets []string) [][]string {
 }
 
 func AutoScore(identify string, dirs []string) ([][]string, error) {
-	type Score struct {
-		dir     string
-		wer     float64
+	type Wer struct {
+		id      string
 		wer_str string
+	}
+	type Score struct {
+		dir  string
+		wers []Wer
 	}
 	rec := make(chan Score)
 	go func() {
@@ -92,33 +94,32 @@ func AutoScore(identify string, dirs []string) ([][]string, error) {
 			wg.Add(1)
 			go func(dir string) {
 				defer wg.Done()
-				cmd_str := "grep WER " + dir + "/wer* | utils/best_wer.sh"
+				// cmd_str := "grep WER " + dir + "/w* | utils/best_wer.sh"
+				cmd_str := JoinArgs("local/calc_chime3.sh",
+					dir,
+					SysConf().LM)
 				output, err := CpuBashOutput(cmd_str)
 				if err != nil || len(output) < 1 {
 					Err().Println(fmt.Errorf("cmd failed or empty output!\n"))
 					return
 				}
 				out_str := strings.Trim(string(output[:len(output)]), " \n")
-				items := strings.Fields(out_str)
-				if len(items) < 2 {
-					Err().Println(fmt.Errorf("Output:%s  \n Output have less than 2 items\n", out_str))
-					return
+				wers := []Wer{}
+				for _, line := range strings.Split(out_str, "\n") {
+					items := strings.Fields(line)
+					if len(items) < 2 {
+						Err().Println(fmt.Errorf("Output:%s  \n Output have less than 2 items\n", out_str))
+						continue
+					}
+					wers = append(wers, Wer{items[0], items[1]})
 				}
-				wer_str := items[1]
-				wer, perr := strconv.ParseFloat(wer_str, 32)
-				if perr != nil {
-					Err().Println(perr)
-					return
-				}
-				rec <- Score{dir, wer, wer_str}
+				rec <- Score{dir, wers}
 			}(dir)
 		}
 		wg.Wait()
 		close(rec)
 	}()
 	res_str := [][]string{}
-	sum := 0.0
-	count := 0
 	// for folling the same sort
 	dict := map[string]Score{}
 	for sc := range rec {
@@ -127,13 +128,10 @@ func AutoScore(identify string, dirs []string) ([][]string, error) {
 
 	for _, dir := range dirs {
 		if sc, ok := dict[dir]; ok {
-			sum += sc.wer
-			count += 1
-			res_str = append(res_str, []string{identify, MkScoreId(path.Base(dir)), sc.wer_str})
+			for _, w := range sc.wers {
+				res_str = append(res_str, []string{identify, w.id, w.wer_str})
+			}
 		}
-	}
-	if count > 1 { // compute the average
-		res_str = append(res_str, []string{identify, MkScoreId("Ave"), fmt.Sprintf("%.2f", sum/float64(count))})
 	}
 	return res_str, nil
 

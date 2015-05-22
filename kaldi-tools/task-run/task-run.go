@@ -74,6 +74,9 @@ func RunMultiTask(list string) {
 		go func(str string) {
 			defer wg.Done()
 			for _, field := range strings.Split(str, ";") {
+				if len(strings.Trim(field, "\n ")) == 0 {
+					continue
+				}
 				items := strings.Split(field, "#")
 				RunTask(strings.Trim(items[0], " \n"), strings.Trim(items[1], " \n"))
 			}
@@ -144,7 +147,6 @@ func main() {
 	kaldi.Init(root, lm)
 	defer kaldi.Uninit()
 	kaldi.Trace().Println("task-run")
-
 	if !manual {
 		kaldi.DevInstance().AutoSync()
 		kaldi.DevInstance().SortGpu()

@@ -58,7 +58,7 @@ func (p Paster) Paste(rel string) error {
 			Err().Println(err)
 			return err
 		}
-		feat_scp := strings.Replace(c.FeatStr(), JobStr(), path.Join(c.DataDir(), rel), -1)
+		feat_scp := strings.Replace(c.FeatStr(""), JobStr(), path.Join(c.DataDir(), rel), -1)
 		input = JoinArgs(input, feat_scp)
 	}
 

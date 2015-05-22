@@ -74,7 +74,7 @@ func (d Dnn) DecodeDir(dir string) string {
 func (d Dnn) OptStr() string {
 	return JoinArgs(
 		d.DnnConf.OptStr(),
-		d.Feat.OptStr())
+		d.Model.OptStr())
 }
 
 func (d Dnn) Train() error {
@@ -109,10 +109,10 @@ func (d Dnn) Decode(set string) error {
 	var wg sync.WaitGroup
 	for _, dir := range items {
 		cmd_str := JoinArgs(
-			"steps/nnet2/decode.sh",
+			DecodeCmd(d.Identify()),
 			"--num-threads 1",
 			"--nj", MaxNum(path.Join(d.Src.DataDir(), dir)),
-			d.FeatOpt(),
+			d.FeatOpt(d.AlignDir()),
 			Graph(d.TargetDir()),
 			path.Join(d.Src.DataDir(), dir),
 			d.DecodeDir(dir))

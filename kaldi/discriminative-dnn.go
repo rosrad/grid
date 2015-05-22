@@ -76,8 +76,7 @@ func (d DiscDnn) OptStr() string {
 
 func (d DiscDnn) DenlatsOptStr() string {
 	return JoinArgs(
-		d.Model.Feat.OptStr(),
-		"--nj", MaxNum(d.Dst.TrainData("mc")),
+		d.Model.OptStr(),
 		"--sub-split 20",
 		"--num-threads 6")
 }

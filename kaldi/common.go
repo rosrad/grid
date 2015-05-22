@@ -115,14 +115,17 @@ func LogRun(cmd, dir string) error {
 }
 
 func CpuBashRun(cmd string) error {
-	opt := DevInstance().AutoSelectCpu()
-	cwd, cerr := os.Getwd()
-	if cerr != nil {
-		return cerr
+	dev_cmd := cmd
+	if DevInstance().Inited() {
+		opt := DevInstance().AutoSelectCpu()
+		cwd, cerr := os.Getwd()
+		if cerr != nil {
+			return cerr
+		}
+		dev_cmd = JoinArgs("ssh", opt.Node,
+			"\"cd", cwd+";",
+			cmd+"\"")
 	}
-	dev_cmd := JoinArgs("ssh", opt.Node,
-		"\"cd", cwd+";",
-		cmd+"\"")
 	return BashRun(dev_cmd)
 }
 
@@ -133,14 +136,18 @@ func BashRun(cmd string) error {
 }
 
 func CpuBashOutput(cmd string) (out []byte, err error) {
-	opt := DevInstance().AutoSelectCpu()
-	cwd, cerr := os.Getwd()
-	if cerr != nil {
-		return []byte{}, cerr
+	dev_cmd := cmd
+	if DevInstance().Inited() {
+		opt := DevInstance().AutoSelectCpu()
+		cwd, cerr := os.Getwd()
+		if cerr != nil {
+			return []byte{}, cerr
+		}
+		// Trace().Println("BashOutput", cmd)
+		dev_cmd = JoinArgs("ssh", opt.Node,
+			"\"cd", cwd+";",
+			cmd+"\"")
 	}
-	dev_cmd := JoinArgs("ssh", opt.Node,
-		"\"cd", cwd+";",
-		cmd+"\"")
 	return BashOutput(dev_cmd)
 }
 

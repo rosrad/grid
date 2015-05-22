@@ -36,7 +36,7 @@ func NewBnfDnn() *BnfDnn {
 func (b BnfDnn) OptStr() string {
 	return JoinArgs(b.BnfConf.OptStr(),
 		b.DnnConf.OptStr(),
-		b.Feat.OptStr())
+		b.Model.OptStr())
 }
 
 func (b *BnfDnn) Train() error {
@@ -89,7 +89,7 @@ func (b *BnfDnn) Dump(set string) error {
 		cmd_str := JoinArgs(
 			"steps/nnet2/dump_bottleneck_features.sh",
 			"--nj", MaxNum(path.Join(b.Src.DataDir(), dir)),
-			b.FeatOpt(),
+			b.FeatOpt(b.AlignDir()),
 			path.Join(b.Src.DataDir(), dir), // source dir
 			dst_data,                        // bnf destination dir
 			b.TargetDir(),                   // bnf model

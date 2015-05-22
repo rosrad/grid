@@ -3,6 +3,7 @@ package kaldi
 import (
 	"encoding/json"
 	"os"
+	"path"
 	"strings"
 )
 
@@ -16,7 +17,7 @@ type DatasetConf struct {
 var dataset_conf = &DatasetConf{"", "", []string{}, []string{}}
 
 func LoadDataConf() error {
-	data_conf := "dataset.json"
+	data_conf := path.Join(SysConf().Root, "dataset.json")
 	f, err := os.Open(data_conf)
 	if err != nil {
 		Err().Println("Dataset Conf Read :", err)
@@ -29,6 +30,7 @@ func LoadDataConf() error {
 		Err().Println("Dataset Conf Decode :", err)
 		return err
 	}
+	Trace().Println(Dataset())
 	return nil
 }
 

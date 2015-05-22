@@ -9,16 +9,18 @@ import (
 )
 
 type GlobalConf struct {
-	Root      string
-	LM        string
-	DecodeSet string
+	Root        string
+	LM          string
+	DecodeSet   string
+	MaxNum      int
+	FmllrDecode bool
 	TaskConf
 	ExcludeNode []int
 }
 
 var g_root string
 
-var g_conf = &GlobalConf{"tmp", "bg", "", *NewTaskConf(), []int{}}
+var g_conf = &GlobalConf{"tmp", "bg", "", 32, false, *NewTaskConf(), []int{}}
 
 func SetRoot(root string) {
 	g_root = root
@@ -77,13 +79,33 @@ func SpkNum(dir string) int {
 }
 
 func MaxNum(dir string) string {
-	max := 16
+	max := SysConf().MaxNum
 	if nspk := SpkNum(dir); nspk < max {
 		max = nspk
 	}
 	return strconv.Itoa(max)
 }
 
-func GaussConf() string {
-	return JoinArgs("2500", "15000")
+func DecodeCmd(exp string) string {
+	gmm_decoder := "steps/decode.sh"
+	if SysConf().FmllrDecode {
+		gmm_decoder = "steps/decode_fmllr.sh"
+	}
+	switch exp {
+	case "GMM":
+		return gmm_decoder
+	case "LDA":
+		return gmm_decoder
+	case "SAT":
+		return gmm_decoder
+	case "MONO":
+		return gmm_decoder
+	case "DNN":
+		return "steps/nnet2/decode.sh"
+	case "NET":
+		return "steps/nnet/decode.sh"
+	default:
+		return ""
+	}
+
 }

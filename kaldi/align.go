@@ -10,39 +10,48 @@ import (
 type Align struct {
 	ExpBase
 	Feat
-	Extra string
+	Fmllr bool
+	Extra Extra
 }
 
 func NewAlign(feat string) *Align {
-	return &Align{*NewExpBase(), *NewFeat(), ""}
+	return &Align{*NewExpBase(), *NewFeat(), false, Extra{"", ""}}
 }
 
 func (a Align) OptStr() string {
-	return a.FeatOpt()
+	return JoinArgs(a.Extra.Opts, a.FeatOpt(a.ExpDir()))
 }
 
 func (a Align) TrainData() string {
-	cond := "cln"
-	if a.MC {
-		cond = "mc"
-	}
-
-	return a.ExpBase.TrainData(cond)
+	return a.ExpBase.TrainData(a.Feat.Condition())
 }
 
 func (a Align) AlignCmd() (error, string) {
-
+	gmm_align := "steps/align_si.sh"
+	if a.Fmllr {
+		gmm_align = "steps/align_fmllr.sh"
+	}
 	switch a.Exp {
+	case "MONO":
+		return nil, gmm_align
 	case "GMM":
-		return nil, "steps/align_si.sh"
+		return nil, gmm_align
+	case "LDA":
+		return nil, gmm_align
+	case "SAT":
+		return nil, gmm_align
 	case "DNN":
 		return nil, "steps/nnet2/align.sh"
+	case "NET":
+		return nil, "steps/nnet/align.sh"
 	default:
 		return fmt.Errorf("No Effective Align for :%s", a.Exp), ""
 	}
 
 }
+
 func (a Align) MkAlign() error {
+
 	err, script := a.AlignCmd()
 	if err != nil {
 		Err().Println(err)
@@ -52,6 +61,7 @@ func (a Align) MkAlign() error {
 		script,
 		"--nj", MaxNum(a.TrainData()),
 		a.OptStr(),
+		a.Extra.Args,
 		a.TrainData(),
 		Lang(),
 		a.ExpDir(),
@@ -59,7 +69,7 @@ func (a Align) MkAlign() error {
 	if err := LogCpuRun(cmd_str, a.AlignDir()); err != nil {
 		return err
 	}
-
+	SyncMat(a.Transform, a.ExpDir(), a.AlignDir())
 	return nil
 }
 

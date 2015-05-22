@@ -2,6 +2,7 @@
 package kaldi
 
 import (
+	"path"
 	"strconv"
 	"strings"
 )
@@ -16,10 +17,11 @@ type Feat struct {
 	Norm      Norm     // Normalision config
 	Context   int
 	MC        bool
+	basedir   string
 }
 
 func NewFeat() *Feat {
-	return &Feat{"raw", []string{}, *NewNorm(), 0, true}
+	return &Feat{"raw", []string{}, *NewNorm(), 0, true, ""}
 }
 
 func (f Feat) Condition() string {
@@ -50,7 +52,7 @@ func (f Feat) SpliceStr() string {
 	return ""
 }
 
-func (f Feat) FeatStr() string {
+func (f Feat) Str() string {
 	str := JoinArgs("ark,s,cs:copy-feats", "scp:"+JobStr()+"/feats.scp", "ark:-")
 	if norm := f.Norm.NormStr(); norm != "" {
 		str = JoinArgs(str, "|", norm)
@@ -62,19 +64,14 @@ func (f Feat) FeatStr() string {
 	if dy := f.DynamicStr(); dy != "" {
 		str = JoinArgs(str, "|", dy)
 	}
-
-	if transform := f.TransformStr(); transform != "" {
-		str = JoinArgs(str, "|", transform)
-	}
-
-	return "'" + str + "|'"
+	return str
 }
 
-func (f Feat) TransformStr() string {
+func (f Feat) TransformStr(dir string) string {
 	opt := ""
-	for _, dir := range f.Transform {
+	for _, mat := range f.Transform {
 
-		if len(strings.Trim(dir, " ")) == 0 {
+		if len(strings.Trim(mat, " ")) == 0 {
 			continue
 		}
 
@@ -82,16 +79,22 @@ func (f Feat) TransformStr() string {
 			opt += " | "
 		}
 		opt += JoinArgs("transform-feats",
-			dir,
+			path.Join(dir, mat),
 			"ark:-", "ark:-")
 	}
 	return opt
 }
 
-func (f Feat) FeatOpt() string {
-	return JoinArgs("--feat", f.FeatStr())
+func (f Feat) FeatStr(dir string) string {
+	str := f.Str()
+
+	if transform := f.TransformStr(dir); transform != "" {
+		str = JoinArgs(str, "|", transform)
+	}
+
+	return "'" + str + "|'"
 }
 
-func (f Feat) OptStr() string {
-	return f.FeatOpt()
+func (f Feat) FeatOpt(dir string) string {
+	return JoinArgs("--feat", f.FeatStr(dir))
 }

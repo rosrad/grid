@@ -37,6 +37,7 @@ func (c Mfcc) Compute(set string) error {
 }
 
 func (c Mfcc) ComputeAll(set DataType) {
+	Trace().Println(set)
 	var wg sync.WaitGroup
 	for _, set := range DataSets(set) {
 		wg.Add(1)

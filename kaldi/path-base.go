@@ -58,6 +58,13 @@ func (p ExpBase) AlignDir() string {
 	return a.ExpDir()
 }
 
+func (p ExpBase) DenLatsDir() string {
+	a := p
+	a.Name = JoinDots(a.Exp, a.Name)
+	a.Exp = "DENLATS"
+	return a.ExpDir()
+}
+
 func (p ExpBase) TrainData(cond string) string {
 	return path.Join(p.DataDir(), TrainName(cond))
 }

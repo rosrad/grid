@@ -39,10 +39,6 @@ func (p Plda) DecodeDir(set string) string {
 	return MkDecode(p.TargetDir(), set)
 }
 
-func (p Plda) OptStr() string {
-	return JoinArgs(p.Feat.OptStr())
-}
-
 func (p Plda) MkPreCond() error {
 	files := [...]string{"final.ubm", "splice_opts", "cmvn_opts"}
 	for _, f := range files {
@@ -99,7 +95,7 @@ func (p Plda) Decode(set string) error {
 			"steps/decode_plda.sh",
 			"--stage -1",
 			"--nj ", MaxNum(path.Join(p.SourceData(), dir)),
-			p.FeatOpt(),
+			p.FeatOpt(p.AlignDir()),
 			Graph(p.TargetDir()),
 			path.Join(p.SourceData(), dir),
 			p.DecodeDir(dir))

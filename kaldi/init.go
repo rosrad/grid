@@ -24,7 +24,6 @@ var g_warn, g_err, g_trace *log.Logger
 
 func Init(root, LM string) {
 	LoadGlobalConf()
-	LoadDataConf()
 	if "" != root {
 		SysConf().Root = root
 	}
@@ -33,6 +32,7 @@ func Init(root, LM string) {
 	}
 	Trace().Println("LM :", SysConf().LM)
 	Trace().Println("Root :", RootPath())
+	LoadDataConf()
 	var err error
 	g_logfile, err = os.OpenFile(LogFile("default"), os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
 	if err != nil {

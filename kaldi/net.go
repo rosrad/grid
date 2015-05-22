@@ -32,7 +32,7 @@ func NewNetConf() *NetConf {
 func (conf *NetConf) OptStr() string {
 	var_opt := ""
 	var_opt = JoinArgs(var_opt, "--splice", strconv.Itoa(conf.Context))
-	var_opt = JoinArgs(var_opt, "--hid-layers", strconv.Itoa(conf.Layers))
+	var_opt = JoinArgs(var_opt, "--nn-depth", strconv.Itoa(conf.Layers))
 	var_opt = JoinArgs(var_opt, "--hid-dim", strconv.Itoa(conf.Nodes))
 	return var_opt
 }
@@ -79,7 +79,7 @@ func (n Net) DecodeDir(dir string) string {
 func (n Net) OptStr() string {
 	return JoinArgs(
 		n.NetConf.OptStr(),
-		n.Feat.OptStr())
+		n.Model.OptStr())
 }
 
 func (n Net) SubTrainData() error {
@@ -122,7 +122,7 @@ func (n Net) TrainNet() error {
 		"--learn-rate 0.008",
 		"--hid-layers 0",
 		"--feature-transform", ft,
-		n.FeatOpt(),
+		n.FeatOpt(n.AlignDir()),
 		tr, cv,
 		Lang(),
 		n.AlignDir(),
@@ -154,22 +154,27 @@ func (n Net) Decode(set string) error {
 		return err
 	}
 	ft := path.Join(n.PreTargetDir(), "final.feature_transform")
+
+	decode_opt := ""
+	if len(n.DecodeConf) != 0 {
+		decode_opt = JoinArgs("--config", n.DecodeConf)
+	}
+
 	var wg sync.WaitGroup
 	for _, dir := range items {
 		cmd_str := JoinArgs(
-			"steps/nnet/decode.sh",
+			DecodeCmd(n.Identify()),
+			decode_opt,
 			"--feature-transform", ft,
-			"--num-threads 1",
-			"--config conf/decode_dnn.config",
 			"--nj", MaxNum(path.Join(n.Src.DataDir(), dir)),
-			n.FeatOpt(),
+			n.FeatOpt(n.AlignDir()),
 			Graph(n.TargetDir()),
 			path.Join(n.Src.DataDir(), dir),
 			n.DecodeDir(dir))
 		wg.Add(1)
 		go func(cmd_str, dir string) {
 			defer wg.Done()
-			if err := LogCpuRun(cmd_str, dir); err != nil {
+			if err := LogGpuRun(cmd_str, dir); err != nil {
 				Err().Println(err)
 			}
 		}(cmd_str, n.DecodeDir(dir))
@@ -184,7 +189,7 @@ func (n Net) Score(set string) ([][]string, error) {
 }
 
 func (n Net) Identify() string {
-	return "DNN"
+	return "NET"
 }
 
 type NetTask struct {

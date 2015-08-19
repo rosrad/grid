@@ -1,13 +1,14 @@
 package main
 
 import (
+	"bufio"
 	"encoding/json"
 	"flag"
 	"github.com/rosrad/kaldi"
-	"github.com/rosrad/util"
 	"io"
 	"os"
 	"strings"
+	"sync"
 )
 
 type Config struct {
@@ -20,69 +21,87 @@ func NewConfig() *Config {
 	return &Config{"", "", ""}
 }
 
-func ParseStream(reader io.Reader) (*Config, error) {
-	dec := json.NewDecoder(reader)
-	t := NewConfig()
-	err := dec.Decode(t)
-	return t, err
+func ParseCFGStream(reader io.Reader) []Config {
+	cfg := []Config{}
+	for {
+		dec := json.NewDecoder(reader)
+		t := NewConfig()
+		err := dec.Decode(t)
+		kaldi.Trace().Println("config", t)
+		if err != nil {
+			kaldi.Err().Println("Parsing Config Error:", err)
+			break
+		}
+		cfg = append(cfg, *t)
+	}
+	kaldi.Trace().Println("configs", cfg)
+	return cfg
 }
 
-func ParseFile(f string) (*Config, error) {
+func ParseCFGFile(f string) []Config {
 	fs, err := os.Open(f)
 	defer fs.Close()
-	if err != nil {
-		return nil, err
-	}
-	return ParseStream(fs)
-}
 
-func ListFiles(f string) []string {
-	items, err := util.ReadLines(f)
 	if err != nil {
-		kaldi.Err().Println("List file decoding error:", err)
-		return []string{}
+		kaldi.Err().Println("Open config file :", err)
+		return []Config{}
 	}
-	list := []string{}
-	for _, c := range items {
-		str := strings.Trim(c, " \n")
-		if len(str) != 0 {
-			list = append(list, str)
-		}
-	}
-	return list
+	return ParseCFGStream(fs)
 }
 
 func ApplyCmd(c Config) {
-	list := ListFiles(c.List)
-	for _, item := range list {
-		cmd := kaldi.JoinArgs(c.Cmd, c.Args, item)
-		err := kaldi.CpuBashRun(cmd)
-		if err != nil {
-			kaldi.Err().Println("Cmd Err:", cmd, "\t", err)
+	file, err := os.Open(c.List)
+	kaldi.Trace().Println("list :", c.List)
+	if err != nil {
+		kaldi.Err().Println("Open list file :", err)
+		return
+	}
+	defer file.Close()
+
+	scanner := bufio.NewScanner(file)
+	for scanner.Scan() {
+		item := strings.Trim(scanner.Text(), " \n")
+		if len(item) != 0 {
+			cmd := kaldi.JoinArgs(c.Cmd, c.Args, item)
+			err := kaldi.CpuBashRun(cmd)
+			if err != nil {
+				kaldi.Err().Println("Cmd Err:", cmd, "\t", err)
+			}
 		}
 	}
 }
 
+func ApplyCmds(cs []Config, max int) {
+	var wg sync.WaitGroup
+	for _, c := range cs {
+		wg.Add(1)
+		go func(cfg Config) {
+			defer wg.Done()
+			ApplyCmd(cfg)
+		}(c)
+	}
+	wg.Wait()
+}
+
 func main() {
-	var config string
 	var manual bool
-	flag.StringVar(&config, "config", "", "config file")
+	var num int
 	flag.BoolVar(&manual, "manual", false, "manual to control servers (default=false) ")
+	flag.IntVar(&num, "n", 4, "number of parallel processing")
 	flag.Parse()
 	kaldi.Init("", "")
 	defer kaldi.Uninit()
-	kaldi.Trace().Println("task-run")
-	if !manual {
-		kaldi.DevInstance().AutoSync()
-		kaldi.DevInstance().SortGpu()
-		kaldi.DevInstance().PrintNodes(true)
-		kaldi.DevInstance().SortCpu()
-		kaldi.DevInstance().PrintNodes(false)
-	}
-	cfg, err := ParseFile(config)
-	if err != nil {
-		kaldi.Err().Println("Parsing Config Err:", err)
+	kaldi.Trace().Println("cmd-run")
+
+	if flag.NArg() == 0 {
+		kaldi.Trace().Println("No enough args!")
 		return
 	}
-	ApplyCmd(*cfg)
+
+	config := flag.Arg(0)
+	kaldi.Trace().Println("The first Arg:", config)
+
+	cfgs := ParseCFGFile(config)
+	kaldi.Trace().Println(cfgs)
+	ApplyCmds(cfgs, num)
 }

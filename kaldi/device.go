@@ -28,7 +28,7 @@ func (gn Node) GpuUsage() float32 {
 }
 
 func (gn Node) CpuUsage() float32 {
-	return float32(gn.CpuNum) * gn.CpuMHz * (100 - gn.LoadAve) / 100
+	return float32(gn.CpuNum) * gn.CpuMHz * (100 - gn.LoadAve*float32(gn.CpuNum/4)) / 100
 }
 
 func (gn *Node) SyncInfo() error {
@@ -37,6 +37,8 @@ func (gn *Node) SyncInfo() error {
 		"sys-info.sh")
 	out, err := BashOutput(cmd_str)
 	if err != nil {
+		gn.CpuMHz = 0
+		gn.GpuMem = 0
 		return err
 	}
 	str := strings.Trim(string(out), "\n ")
@@ -76,10 +78,14 @@ type DevSel struct {
 	m     int
 	quit  <-chan struct{}
 	msg   chan int
+	mu    *sync.RWMutex
+	rpc   NodeRPC
 }
 
 func NewDevSel() *DevSel {
-	return &DevSel{m: 60}
+	DV := &DevSel{m: 60, mu: &sync.RWMutex{}, rpc: NodeRPC{}}
+	DV.rpc.DV = DV
+	return DV
 }
 
 var dev_instance *DevSel
@@ -91,7 +97,19 @@ func DevInstance() *DevSel {
 	return dev_instance
 }
 
+var ip_str = "node13:9001"
+
+func GridClient() *RPCClient {
+	return NewClient(ip_str)
+}
+
+func (gs *DevSel) RPC() *NodeRPC {
+	return &gs.rpc
+}
+
 func (gs *DevSel) Inited() bool {
+	gs.mu.RLock()
+	defer gs.mu.RUnlock()
 	return len(gs.Nodes) != 0
 }
 
@@ -183,6 +201,9 @@ func (gs *DevSel) SortCpu() {
 	By(load).Sort(gs.Nodes)
 }
 
+func (gs *DevSel) Update() {
+	gs.update()
+}
 func (gs *DevSel) update() {
 	if gs.msg != nil {
 		select {
@@ -198,7 +219,10 @@ func (gs *DevSel) update() {
 		}
 	}
 }
+
 func (gs *DevSel) AutoSelectGpu() Node {
+	gs.mu.Lock()
+	defer gs.mu.Unlock()
 	gs.SortGpu()
 	opt_node := gs.Nodes[0]
 	gs.Nodes[0].GpuMem = gs.Nodes[0].GpuMem / 2
@@ -207,9 +231,11 @@ func (gs *DevSel) AutoSelectGpu() Node {
 }
 
 func (gs *DevSel) AutoSelectCpu() Node {
+	gs.mu.Lock()
+	defer gs.mu.Unlock()
 	gs.SortCpu()
 	opt_node := gs.Nodes[0]
-	gs.Nodes[0].LoadAve += 30
+	gs.Nodes[0].LoadAve += 60
 	gs.update()
 	return *opt_node
 }

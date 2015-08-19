@@ -62,14 +62,14 @@ func DirExist(dir string) bool {
 
 func LogGpuRun(cmd, dir string) error {
 	dev_cmd := cmd
-	if DevInstance().Inited() {
-		opt := DevInstance().AutoSelectGpu()
-		cwd, cerr := os.Getwd()
+	if GridClient().Inited() {
+		opt := GridClient().AutoSelectGpu()
+		cwd, cerr := BashOutput("pwd")
 		if cerr != nil {
 			return cerr
 		}
 		dev_cmd = JoinArgs("ssh", opt.Node,
-			"\"cd", cwd+";",
+			"\"cd", strings.Trim(string(cwd), " \n")+";",
 			cmd+"\"")
 		Trace().Printf("HOST: %s\nCMD: %s\n", opt.Node, dev_cmd)
 	}
@@ -79,14 +79,14 @@ func LogGpuRun(cmd, dir string) error {
 
 func LogCpuRun(cmd, dir string) error {
 	dev_cmd := cmd
-	if DevInstance().Inited() {
-		opt := DevInstance().AutoSelectCpu()
-		cwd, cerr := os.Getwd()
+	if GridClient().Inited() {
+		opt := GridClient().AutoSelectCpu()
+		cwd, cerr := BashOutput("pwd")
 		if cerr != nil {
 			return cerr
 		}
 		dev_cmd = JoinArgs("ssh", opt.Node,
-			"\"cd", cwd+";",
+			"\"cd", strings.Trim(string(cwd), " \n")+";",
 			cmd+"\"")
 		Trace().Printf("HOST: %s\nCMD: %s\n", opt.Node, dev_cmd)
 	}
@@ -114,17 +114,34 @@ func LogRun(cmd, dir string) error {
 	return s.Run()
 }
 
-func CpuBashRun(cmd string) error {
+func GpuBashRun(cmd string) error {
 	dev_cmd := cmd
-	if DevInstance().Inited() {
-		opt := DevInstance().AutoSelectCpu()
-		cwd, cerr := os.Getwd()
+	if GridClient().Inited() {
+		opt := GridClient().AutoSelectGpu()
+		cwd, cerr := BashOutput("pwd")
 		if cerr != nil {
 			return cerr
 		}
 		dev_cmd = JoinArgs("ssh", opt.Node,
-			"\"cd", cwd+";",
+			"\"cd", strings.Trim(string(cwd), " \n")+";",
 			cmd+"\"")
+		Trace().Printf("HOST: %s\nCMD: %s\n", opt.Node, dev_cmd)
+	}
+	return BashRun(dev_cmd)
+}
+
+func CpuBashRun(cmd string) error {
+	dev_cmd := cmd
+	if GridClient().Inited() {
+		opt := GridClient().AutoSelectCpu()
+		cwd, cerr := BashOutput("pwd")
+		if cerr != nil {
+			return cerr
+		}
+		dev_cmd = JoinArgs("ssh", opt.Node,
+			"\"cd", strings.Trim(string(cwd), " \n")+";",
+			cmd+"\"")
+		Trace().Printf("HOST: %s\nCMD: %s\n", opt.Node, dev_cmd)
 	}
 	return BashRun(dev_cmd)
 }
@@ -137,15 +154,15 @@ func BashRun(cmd string) error {
 
 func CpuBashOutput(cmd string) (out []byte, err error) {
 	dev_cmd := cmd
-	if DevInstance().Inited() {
-		opt := DevInstance().AutoSelectCpu()
-		cwd, cerr := os.Getwd()
+	if GridClient().Inited() {
+		opt := GridClient().AutoSelectCpu()
+		cwd, cerr := BashOutput("pwd")
 		if cerr != nil {
 			return []byte{}, cerr
 		}
 		// Trace().Println("BashOutput", cmd)
 		dev_cmd = JoinArgs("ssh", opt.Node,
-			"\"cd", cwd+";",
+			"\"cd", strings.Trim(string(cwd), " \n")+";",
 			cmd+"\"")
 	}
 	return BashOutput(dev_cmd)

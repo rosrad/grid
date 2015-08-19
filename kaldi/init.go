@@ -30,20 +30,20 @@ func Init(root, LM string) {
 	if "" != LM {
 		SysConf().LM = LM
 	}
-	Trace().Println("LM :", SysConf().LM)
-	Trace().Println("Root :", RootPath())
-	LoadDataConf()
+	// Trace().Println("LM :", SysConf().LM)
+	// Trace().Println("Root :", RootPath())
+	// LoadDataConf()
 	var err error
 	g_logfile, err = os.OpenFile(LogFile("default"), os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
 	if err != nil {
 		g_logfile = nil
 		log.Println("Error of log file:", err)
 	}
-	Warn().Println("")
-	Warn().Println("=============================")
-	Warn().Println("Default LogFile:", LogFile("default"))
-	Warn().Println("=============================")
-	Warn().Println("")
+	// Warn().Println("")
+	// Warn().Println("=============================")
+	// Warn().Println("Default LogFile:", LogFile("default"))
+	// Warn().Println("=============================")
+	// Warn().Println("")
 }
 
 func NewLogWriter(tag string) io.Writer {
@@ -62,9 +62,9 @@ func LogWriter() io.Writer {
 }
 
 func Uninit() {
-	Warn().Println("")
-	Warn().Println("=============================")
-	Warn().Println("")
+	// Warn().Println("")
+	// Warn().Println("=============================")
+	// Warn().Println("")
 	if g_logfile != nil {
 		defer g_logfile.Close()
 	}

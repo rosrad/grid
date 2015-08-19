@@ -2,28 +2,33 @@
 package main
 
 import (
+	"flag"
+	"fmt"
 	"github.com/rosrad/kaldi"
-	"log"
-	"time"
 )
 
 func main() {
-	// gs := kaldi.NewDevSel()
-	// gs.Init()
-	// gs.SyncInfo()
-	// gs.SortGpu()
-	// gs.PrintNodes()
+	var update bool
+	flag.BoolVar(&update, "u", false, "update server")
+	flag.Parse()
 	kaldi.Init("", "")
 	defer kaldi.Uninit()
-	kaldi.DevInstance().AutoSync()
-	for {
-		kaldi.DevInstance().SortGpu()
-		kaldi.DevInstance().PrintNodes(true)
-		log.Println("")
-		kaldi.DevInstance().SortCpu()
-		kaldi.DevInstance().PrintNodes(false)
-		log.Println("")
-		kaldi.DevInstance().AutoSelectGpu()
-		time.Sleep(15 * time.Second)
+	if !kaldi.GridClient().Inited() {
+		kaldi.Err().Println("Grid Client no initlized!")
+		return
+	}
+	if update {
+		fmt.Println("Update grid nodes")
+		kaldi.GridClient().Update()
+	}
+	fmt.Println("========= Gpu Sort =========")
+	for _, n := range kaldi.GridClient().GpuSort() {
+		fmt.Printf("Node:%s, GpuUsage:%04.2f, GpuMem:%04.2f \n", n.Node, n.GpuUsage(), n.GpuMem)
+	}
+
+	fmt.Println("========= Cpu Sort =========")
+	for _, n := range kaldi.GridClient().CpuSort() {
+		fmt.Printf("Node:%s, CpuUsage:%04.2f, CPU(s):%02d, CPU MHz: %04.2f, LoadAve:%02.2f\n",
+			n.Node, n.CpuUsage(), n.CpuNum, n.CpuMHz, n.LoadAve)
 	}
 }
